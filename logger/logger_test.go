@@ -47,8 +47,8 @@ func TestGetSetLevel(t *testing.T) {
 	logger.Criticalf("Critical.")
 
 	assert.Length(tw, 2)
-	assert.Contents("[ERROR]", tw.Entries()[0])
-	assert.Contents("[CRITICAL]", tw.Entries()[1])
+	assert.Contains("[ERROR]", tw.Entries()[0])
+	assert.Contains("[CRITICAL]", tw.Entries()[1])
 	tw.Reset()
 }
 
