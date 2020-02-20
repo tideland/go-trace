@@ -194,7 +194,7 @@ func (lb *loggerBackend) log(level LogLevel, format string, args ...interface{})
 		return
 	}
 	lb.mu.Lock()
-	lb.out.Write(level, msg)
+	_ = lb.out.Write(level, msg)
 	lb.mu.Unlock()
 }
 

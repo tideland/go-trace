@@ -43,22 +43,22 @@ func NewSysWriter(tag string) (Writer, error) {
 }
 
 // Write implements Writer.
-func (w *syslogWriter) Write(level LogLevel, msg string) {
+func (w *syslogWriter) Write(level LogLevel, msg string) error {
 	switch level {
 	case LevelDebug:
-		w.out.Debug(msg)
+		return w.out.Debug(msg)
 	case LevelInfo:
-		w.out.Info(msg)
+		return w.out.Info(msg)
 	case LevelWarning:
-		w.out.Warning(msg)
+		return w.out.Warning(msg)
 	case LevelError:
-		w.out.Err(msg)
+		return w.out.Err(msg)
 	case LevelCritical:
-		w.out.Crit(msg)
+		return w.out.Crit(msg)
 	case LevelFatal:
-		w.out.Emerg(msg)
+		return w.out.Emerg(msg)
 	default:
-		w.out.Warning("[INVALID]" + msg)
+		return w.out.Warning("[INVALID]" + msg)
 	}
 }
 
