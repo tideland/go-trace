@@ -59,7 +59,7 @@ func (mp MeteringPoint) Start() Measurement {
 type Stopwatch struct {
 	mu             sync.RWMutex
 	namespace      string
-	meteringPoints map[string]MeteringPoint
+	meteringPoints map[string]*MeteringPoint
 }
 
 // New returns a new instance of a stopwatch with the given namespace.
@@ -71,14 +71,14 @@ func New(namespace string) *Stopwatch {
 	// Create new stopwatch and register it.
 	sw := &Stopwatch{
 		namespace:      namespace,
-		meteringPoints: make(map[string]MeteringPoint),
+		meteringPoints: make(map[string]*MeteringPoint),
 	}
 	return sw
 }
 
 // MeteringPoint returns a new or already existing metering point
 // with the given ID.
-func (sw *Stopwatch) MeteringPoint(id string) MeteringPoint {
+func (sw *Stopwatch) MeteringPoint(id string) *MeteringPoint {
 	// First check for existing metering point.
 	sw.mu.RLock()
 	mp, ok := sw.meteringPoints[id]
@@ -88,7 +88,7 @@ func (sw *Stopwatch) MeteringPoint(id string) MeteringPoint {
 	}
 	// Not yet existing.
 	sw.mu.Lock()
-	mp = MeteringPoint{
+	mp = &MeteringPoint{
 		id:    id,
 		queue: make([]time.Duration, 1024),
 	}
