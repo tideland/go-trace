@@ -43,7 +43,7 @@ type MeteringPoint struct {
 }
 
 // Start begins a new measurement.
-func (mp MeteringPoint) Start() Measurement {
+func (mp *MeteringPoint) Start() Measurement {
 	return Measurement{
 		owner: &mp,
 		start: time.Now(),
