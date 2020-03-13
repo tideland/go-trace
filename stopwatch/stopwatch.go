@@ -26,6 +26,10 @@ type Measurement struct {
 	start time.Time
 }
 
+func (m *Measurement) Stop() {
+	m.owner.enqueue(time.Now().Sub(m.start))
+}
+
 //--------------------
 // METERING POINT
 //--------------------
@@ -48,6 +52,21 @@ func (mp *MeteringPoint) Start() Measurement {
 		owner: mp,
 		start: time.Now(),
 	}
+}
+
+// enqueue adds the measured duration.
+func (mp *MeteringPoint) enqueue(measuring time.Duration) {
+	mp.mu.Lock()
+	defer mp.mu.Unlock()
+	if mp.queueIndex == cap(mp.queue) {
+		// Accumulate the enqueued values.
+	}
+	mp.queue[mp.queueIndex] = measuring
+	mp.queueIndex++
+}
+
+// accumulate a number of measurings.
+func (mp *MeteringPoint) accumulate(measurings []time.Duration) {
 }
 
 //--------------------
