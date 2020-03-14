@@ -60,6 +60,10 @@ func (mp *MeteringPoint) enqueue(measuring time.Duration) {
 	defer mp.mu.Unlock()
 	if mp.queueIndex == cap(mp.queue) {
 		// Accumulate the enqueued values.
+		measurings := mp.queue
+		mp.queue = make([]time.Duration, 1024)
+		mp.queueIndex = 0
+		go mp.accumulate(measurings)
 	}
 	mp.queue[mp.queueIndex] = measuring
 	mp.queueIndex++
@@ -67,6 +71,42 @@ func (mp *MeteringPoint) enqueue(measuring time.Duration) {
 
 // accumulate a number of measurings.
 func (mp *MeteringPoint) accumulate(measurings []time.Duration) {
+	// Get initial values.
+	mp.mu.RLock()
+	quantity := mp.quantity
+	total := mp.total
+	minimum := mp.minimum
+	maximum := mp.maximum
+	mp.mu.RUnlock()
+	// Accumulate set of measurings isolated.
+	for _, duration := range measurings {
+		if quantity == 0 {
+			quantity = 1
+			total = duration
+			minimum = duration
+			maximum = duration
+			continue
+		}
+		quantity++
+		total += duration
+		if minimum > duration {
+			mininum = duration
+		}
+		if maximum < duration {
+			maximum = duration
+		}
+	}
+	// Total update.
+	mp.mu.Lock()
+	defer mp.mu.Unlock()
+	mp.quantity += quantity
+	mp.total += total
+	if mp.mininum > minimum {
+		mp.minimum = minimum
+	}
+	if mp.maximum < maximum {
+		mp.maximum = maximum
+	}
 }
 
 //--------------------
