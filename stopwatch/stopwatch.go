@@ -26,6 +26,7 @@ type Measurement struct {
 	start time.Time
 }
 
+// Stop ends the measurement and enques its duration.
 func (m *Measurement) Stop() {
 	m.owner.enqueue(time.Now().Sub(m.start))
 }
@@ -37,6 +38,7 @@ func (m *Measurement) Stop() {
 // MeteringPoint collects the measurements of one code section.
 type MeteringPoint struct {
 	mu         sync.RWMutex
+	owner      *Stopwatch
 	id         string
 	queueIndex int
 	queue      []time.Duration
@@ -63,14 +65,27 @@ func (mp *MeteringPoint) enqueue(measuring time.Duration) {
 		measurings := mp.queue
 		mp.queue = make([]time.Duration, 1024)
 		mp.queueIndex = 0
-		go mp.accumulate(measurings)
+		go mp.accumulate(measurings, nil)
 	}
 	mp.queue[mp.queueIndex] = measuring
 	mp.queueIndex++
 }
 
-// accumulate a number of measurings.
-func (mp *MeteringPoint) accumulate(measurings []time.Duration) {
+// accumulateNow synchronously evaluates the measurings.
+func (mp *MeteringPoint) accumulateNow() {
+	mp.mu.Lock()
+	defer mp.mu.Unlock()
+	var wg sync.WaitGroup
+	wg.Add(1)
+	measurings := mp.queue
+	mp.queue = make([]time.Duration, 1024)
+	mp.queueIndex = 0
+	go mp.accumulate(measurings, &wg)
+	wg.Wait()
+}
+
+// accumulate evaluates the collected measurings synchronous or asynchronous.
+func (mp *MeteringPoint) accumulate(measurings []time.Duration, wg *sync.WaitGroup) {
 	// Get initial values.
 	mp.mu.RLock()
 	quantity := mp.quantity
@@ -90,7 +105,7 @@ func (mp *MeteringPoint) accumulate(measurings []time.Duration) {
 		quantity++
 		total += duration
 		if minimum > duration {
-			mininum = duration
+			minimum = duration
 		}
 		if maximum < duration {
 			maximum = duration
@@ -101,12 +116,66 @@ func (mp *MeteringPoint) accumulate(measurings []time.Duration) {
 	defer mp.mu.Unlock()
 	mp.quantity += quantity
 	mp.total += total
-	if mp.mininum > minimum {
+	if mp.minimum > minimum {
 		mp.minimum = minimum
 	}
 	if mp.maximum < maximum {
 		mp.maximum = maximum
 	}
+	// Tell waiting caller that it's done.
+	if wg != nil {
+		wg.Done()
+	}
+}
+
+//--------------------
+// STOPWATCHES
+//--------------------
+
+// stopwatches is the register type for all stopwatches.
+type stopwatches struct {
+	mu      sync.RWMutex
+	watches map[string]*Stopwatch
+}
+
+// once ensures only one initialization.
+var once sync.Once
+
+// registry contains all stopwatches by ID.
+var registry *stopwatches
+
+// initializedRegistry returns the registry for the stopwatches.
+func initializedRegistry() *stopwatches {
+	once.Do(func() {
+		if registry == nil {
+			registry = &stopwatches{
+				watches: make(map[string]*Stopwatch),
+			}
+		}
+	})
+	return registry
+}
+
+// load retrieves an already registered stopwatch or signals if it
+// doesn't exist.
+func (sws *stopwatches) load(namespace string) (*Stopwatch, bool) {
+	sws.mu.RLock()
+	defer sws.mu.RUnlock()
+	sw, ok := sws.watches[namespace]
+	return sw, ok
+}
+
+// store checks if the namespace already exists and possibly returns it.
+// Otherwise it registers the given one and returns that.
+func (sws *stopwatches) store(namespace string, sw *Stopwatch) *Stopwatch {
+	sws.mu.Lock()
+	defer sws.mu.Unlock()
+	swsSW, ok := sws.watches[namespace]
+	if ok {
+		return swsSW
+	}
+	sws.watches[namespace] = sw
+	return sw
 }
 
 //--------------------
@@ -126,13 +195,16 @@ type Stopwatch struct {
 // returned.
 func New(namespace string) *Stopwatch {
 	// Check for alreadoy registered stopwatch.
-	// TODO
+	sw, ok := initializedRegistry().load(namespace)
+	if ok {
+		return sw
+	}
 	// Create new stopwatch and register it.
-	sw := &Stopwatch{
+	sw = &Stopwatch{
 		namespace:      namespace,
 		meteringPoints: make(map[string]*MeteringPoint),
 	}
-	return sw
+	return initializedRegistry().store(namespace, sw)
 }
 
 // MeteringPoint returns a new or already existing metering point
@@ -148,6 +220,7 @@ func (sw *Stopwatch) MeteringPoint(id string) *MeteringPoint {
 	// Not yet existing.
 	sw.mu.Lock()
 	mp = &MeteringPoint{
+		owner: sw,
 		id:    id,
 		queue: make([]time.Duration, 1024),
 	}
