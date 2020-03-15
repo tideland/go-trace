@@ -28,7 +28,7 @@ type Measurement struct {
 
 // Stop ends the measurement and enques its duration.
 func (m *Measurement) Stop() {
-	m.owner.enqueue(time.Now().Sub(m.start))
+	m.owner.enqueue(time.Since(m.start))
 }
 
 //--------------------
