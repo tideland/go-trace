@@ -35,17 +35,27 @@ func (m *Measurement) Stop() {
 // METERING POINT
 //--------------------
 
+// MeteringPointValues contains the accumulated values of one metering point.
+type MeteringPointValues struct {
+	Namespace string
+	ID        string
+	Quantity  int64
+	Total     time.Duration
+	Minimum   time.Duration
+	Maximum   time.Duration
+	Average   time.Duration
+}
+
 // MeteringPoint collects the measurements of one code section.
 type MeteringPoint struct {
-	mu         sync.RWMutex
-	owner      *Stopwatch
-	id         string
-	queueIndex int
-	queue      []time.Duration
-	quantity   int
-	total      time.Duration
-	minimum    time.Duration
-	maximum    time.Duration
+	mu       sync.Mutex
+	owner    *Stopwatch
+	id       string
+	queue    []time.Duration
+	quantity int64
+	total    time.Duration
+	minimum  time.Duration
+	maximum  time.Duration
 }
 
 // Start begins a new measurement.
@@ -56,76 +66,66 @@ func (mp *MeteringPoint) Start() Measurement {
 	}
 }
 
+// Measure is a convenience function to measure one anonymous function.
+func (mp *MeteringPoint) Measure(f func()) {
+	m := mp.Start()
+	defer m.Stop()
+	f()
+}
+
+// Values returns the current values after an accumulation.
+func (mp *MeteringPoint) Values() MeteringPointValues {
+	mp.mu.Lock()
+	defer mp.mu.Unlock()
+	mp.accumulate()
+	return MeteringPointValues{
+		Namespace: mp.owner.namespace,
+		ID:        mp.id,
+		Quantity:  mp.quantity,
+		Total:     mp.total,
+		Minimum:   mp.minimum,
+		Maximum:   mp.maximum,
+		Average:   time.Duration(int64(mp.total) / mp.quantity),
+	}
+}
+
 // enqueue adds the measured duration.
 func (mp *MeteringPoint) enqueue(measuring time.Duration) {
 	mp.mu.Lock()
 	defer mp.mu.Unlock()
-	if mp.queueIndex == cap(mp.queue) {
+	if len(mp.queue) == cap(mp.queue) {
 		// Accumulate the enqueued values.
-		measurings := mp.queue
-		mp.queue = make([]time.Duration, 1024)
-		mp.queueIndex = 0
-		go mp.accumulate(measurings, nil)
+		mp.accumulate()
 	}
-	mp.queue[mp.queueIndex] = measuring
-	mp.queueIndex++
-}
-
-// accumulateNow synchronously evaluates the measurings.
-func (mp *MeteringPoint) accumulateNow() {
-	mp.mu.Lock()
-	defer mp.mu.Unlock()
-	var wg sync.WaitGroup
-	wg.Add(1)
-	measurings := mp.queue
-	mp.queue = make([]time.Duration, 1024)
-	mp.queueIndex = 0
-	go mp.accumulate(measurings, &wg)
-	wg.Wait()
+	mp.queue = append(mp.queue, measuring)
 }
 
 // accumulate evaluates the collected measurings synchronous or asynchronous.
-func (mp *MeteringPoint) accumulate(measurings []time.Duration, wg *sync.WaitGroup) {
-	// Get initial values.
-	mp.mu.RLock()
-	quantity := mp.quantity
-	total := mp.total
-	minimum := mp.minimum
-	maximum := mp.maximum
-	mp.mu.RUnlock()
-	// Accumulate set of measurings isolated.
-	for _, duration := range measurings {
-		if quantity == 0 {
-			quantity = 1
-			total = duration
-			minimum = duration
-			maximum = duration
+func (mp *MeteringPoint) accumulate() {
+	// Accumulate set of enqueued measurings.
+	for _, duration := range mp.queue {
+		if mp.quantity == 0 {
+			mp.quantity = 1
+			mp.total = duration
+			mp.minimum = duration
+			mp.maximum = duration
 			continue
 		}
-		quantity++
-		total += duration
-		if minimum > duration {
-			minimum = duration
+		mp.quantity++
+		mp.total += duration
+		if mp.minimum > duration {
+			mp.minimum = duration
 		}
-		if maximum < duration {
-			maximum = duration
+		if mp.maximum < duration {
+			mp.maximum = duration
 		}
 	}
-	// Total update.
-	mp.mu.Lock()
-	defer mp.mu.Unlock()
-	mp.quantity += quantity
-	mp.total += total
-	if mp.minimum > minimum {
-		mp.minimum = minimum
-	}
-	if mp.maximum < maximum {
-		mp.maximum = maximum
-	}
-	// Tell waiting caller that it's done.
-	if wg != nil {
-		wg.Done()
-	}
+	mp.reset()
+}
+
+// reset clears the measuring queue.
+func (mp *MeteringPoint) reset() {
+	mp.queue = make([]time.Duration, 0, 1024)
 }
 
 //--------------------
@@ -222,8 +222,8 @@ func (sw *Stopwatch) MeteringPoint(id string) *MeteringPoint {
 	mp = &MeteringPoint{
 		owner: sw,
 		id:    id,
-		queue: make([]time.Duration, 1024),
 	}
+	mp.reset()
 	sw.meteringPoints[id] = mp
 	sw.mu.Unlock()
 	return mp
