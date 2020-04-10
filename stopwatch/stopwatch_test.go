@@ -29,18 +29,18 @@ import (
 func TestCreateStopwatch(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
 
-	swOne := stopwatch.New("one")
+	swOne := stopwatch.WithNamespace("one")
 	assert.NotNil(swOne)
 	mpOneA := swOne.MeteringPoint("a")
 	assert.NotNil(mpOneA)
 
-	swTwo := stopwatch.New("two")
+	swTwo := stopwatch.WithNamespace("two")
 	assert.NotNil(swTwo)
 	assert.Different(swOne, swTwo)
 	mpTwoA := swTwo.MeteringPoint("a")
 	assert.Different(mpOneA, mpTwoA)
 
-	swReuse := stopwatch.New("one")
+	swReuse := stopwatch.WithNamespace("one")
 	assert.NotNil(swReuse)
 	assert.Different(swReuse, swTwo)
 	assert.Equal(swOne, swReuse)
