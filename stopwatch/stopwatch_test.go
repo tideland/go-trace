@@ -51,20 +51,51 @@ func TestMeasurings(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
 	gen := generators.New(generators.FixedRand())
 
-	swOne := stopwatch.New("one")
+	swOne := stopwatch.WithNamespace("one")
 	mpOneA := swOne.MeteringPoint("a")
+	mpOneB := swOne.MeteringPoint("b")
+	swTwo := stopwatch.WithNamespace("two")
+	mpTwoA := swTwo.MeteringPoint("a")
 
-	for i := 0; i < 2500; i++ {
+	for i := 0; i < 1500; i++ {
 		m := mpOneA.Start()
-		gen.SleepOneOf(1*time.Millisecond, 3*time.Millisecond, 10*time.Millisecond)
+		gen.SleepOneOf(1*time.Millisecond, 2*time.Millisecond, 3*time.Millisecond)
+		m.Stop()
+		m = mpOneB.Start()
+		gen.SleepOneOf(1*time.Millisecond, 2*time.Millisecond, 3*time.Millisecond)
+		m.Stop()
+		m = mpTwoA.Start()
+		gen.SleepOneOf(1*time.Millisecond, 2*time.Millisecond, 3*time.Millisecond)
 		m.Stop()
 	}
 
-	values := mpOneA.Values()
-	assert.Equal(values.Namespace, "one")
-	assert.Equal(values.ID, "a")
-	assert.Equal(values.Quantity, int64(2500))
-	assert.True(values.Minimum <= values.Average && values.Average <= values.Maximum)
+	// Only for one metering point.
+	mpv := mpOneA.Value()
+	assert.Equal(mpv.Namespace, "one")
+	assert.Equal(mpv.ID, "a")
+	assert.Equal(mpv.Quantity, 1500)
+	assert.True(mpv.Minimum <= mpv.Average && mpv.Average <= mpv.Maximum)
+
+	// Now for all metering points of one stopwatch.
+	mpvs := swOne.Values()
+	assert.Length(mpvs, 2)
+	for _, mpv := range mpvs {
+		assert.Equal(mpv.Namespace, "one")
+		assert.True(mpv.ID == "a" || mpv.ID == "b")
+		assert.Equal(mpv.Quantity, 1500)
+		assert.True(mpv.Minimum <= mpv.Average && mpv.Average <= mpv.Maximum)
+	}
+
+	// Now for all metering points.
+	mpvs = stopwatch.Values()
+	assert.Length(mpvs, 3)
+	for _, mpv := range mpvs {
+		assert.True(mpv.Namespace == "one" || mpv.Namespace == "two")
+		assert.True(mpv.ID == "a" || mpv.ID == "b")
+		assert.Equal(mpv.Quantity, 1500)
+		assert.True(mpv.Minimum <= mpv.Average && mpv.Average <= mpv.Maximum)
+	}
+
 }
 
 // EOF

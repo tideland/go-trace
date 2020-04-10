@@ -32,19 +32,26 @@ func (m *Measurement) Stop() {
 }
 
 //--------------------
-// METERING POINT
+// METERING POINT VALUE
 //--------------------
 
-// MeteringPointValues contains the accumulated values of one metering point.
-type MeteringPointValues struct {
+// MeteringPointValue contains the accumulated value of one metering point.
+type MeteringPointValue struct {
 	Namespace string
 	ID        string
-	Quantity  int64
+	Quantity  int
 	Total     time.Duration
 	Minimum   time.Duration
 	Maximum   time.Duration
 	Average   time.Duration
 }
+
+// MeteringPointValues contains a set of accumulated metering point values.
+type MeteringPointValues []MeteringPointValue
+
+//--------------------
+// METERING POINT
+//--------------------
 
 // MeteringPoint collects the measurements of one code section.
 type MeteringPoint struct {
@@ -52,7 +59,7 @@ type MeteringPoint struct {
 	owner    *Stopwatch
 	id       string
 	queue    []time.Duration
-	quantity int64
+	quantity int
 	total    time.Duration
 	minimum  time.Duration
 	maximum  time.Duration
@@ -73,19 +80,19 @@ func (mp *MeteringPoint) Measure(f func()) {
 	f()
 }
 
-// Values returns the current values after an accumulation.
-func (mp *MeteringPoint) Values() MeteringPointValues {
+// Value returns the current value after an accumulation.
+func (mp *MeteringPoint) Value() MeteringPointValue {
 	mp.mu.Lock()
 	defer mp.mu.Unlock()
 	mp.accumulate()
-	return MeteringPointValues{
+	return MeteringPointValue{
 		Namespace: mp.owner.namespace,
 		ID:        mp.id,
 		Quantity:  mp.quantity,
 		Total:     mp.total,
 		Minimum:   mp.minimum,
 		Maximum:   mp.maximum,
-		Average:   time.Duration(int64(mp.total) / mp.quantity),
+		Average:   time.Duration(int64(mp.total) / int64(mp.quantity)),
 	}
 }
 
@@ -178,6 +185,18 @@ func (sws *stopwatches) store(namespace string, sw *Stopwatch) *Stopwatch {
 	return sw
 }
 
+// Values returns the values of all metering points.
+func Values() MeteringPointValues {
+	mpvs := MeteringPointValues{}
+	reg := initializedRegistry()
+	reg.mu.RLock()
+	defer reg.mu.RUnlock()
+	for _, stopwatch := range reg.watches {
+		mpvs = append(mpvs, stopwatch.Values()...)
+	}
+	return mpvs
+}
+
 //--------------------
 // STOPWATCH
 //--------------------
@@ -190,10 +209,9 @@ type Stopwatch struct {
 	meteringPoints map[string]*MeteringPoint
 }
 
-// New returns a new instance of a stopwatch with the given namespace.
-// In case that namespace is already in use that stopwatch will be
-// returned.
-func New(namespace string) *Stopwatch {
+// WithNamespace returns a new instance of a stopwatch with the given namespace.
+// In case that namespace is already in use that stopwatch will be returned.
+func WithNamespace(namespace string) *Stopwatch {
 	// Check for alreadoy registered stopwatch.
 	sw, ok := initializedRegistry().load(namespace)
 	if ok {
@@ -227,6 +245,17 @@ func (sw *Stopwatch) MeteringPoint(id string) *MeteringPoint {
 	sw.meteringPoints[id] = mp
 	sw.mu.Unlock()
 	return mp
+}
+
+// Values returns the accumulated metering point values of this stopwatch.
+func (sw *Stopwatch) Values() MeteringPointValues {
+	sw.mu.RLock()
+	defer sw.mu.RUnlock()
+	mpvs := MeteringPointValues{}
+	for _, mp := range sw.meteringPoints {
+		mpvs = append(mpvs, mp.Value())
+	}
+	return mpvs
 }
 
 // EOF
