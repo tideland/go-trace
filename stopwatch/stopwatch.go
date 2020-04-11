@@ -209,9 +209,9 @@ type Stopwatch struct {
 	meteringPoints map[string]*MeteringPoint
 }
 
-// WithNamespace returns a new instance of a stopwatch with the given namespace.
+// ForNamespace returns an instance of a stopwatch with the given namespace.
 // In case that namespace is already in use that stopwatch will be returned.
-func WithNamespace(namespace string) *Stopwatch {
+func ForNamespace(namespace string) *Stopwatch {
 	// Check for alreadoy registered stopwatch.
 	sw, ok := initializedRegistry().load(namespace)
 	if ok {

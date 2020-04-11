@@ -29,18 +29,18 @@ import (
 func TestCreateStopwatch(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
 
-	swOne := stopwatch.WithNamespace("one")
+	swOne := stopwatch.ForNamespace("one")
 	assert.NotNil(swOne)
 	mpOneA := swOne.MeteringPoint("a")
 	assert.NotNil(mpOneA)
 
-	swTwo := stopwatch.WithNamespace("two")
+	swTwo := stopwatch.ForNamespace("two")
 	assert.NotNil(swTwo)
 	assert.Different(swOne, swTwo)
 	mpTwoA := swTwo.MeteringPoint("a")
 	assert.Different(mpOneA, mpTwoA)
 
-	swReuse := stopwatch.WithNamespace("one")
+	swReuse := stopwatch.ForNamespace("one")
 	assert.NotNil(swReuse)
 	assert.Different(swReuse, swTwo)
 	assert.Equal(swOne, swReuse)
@@ -51,10 +51,10 @@ func TestMeasurings(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
 	gen := generators.New(generators.FixedRand())
 
-	swOne := stopwatch.WithNamespace("one")
+	swOne := stopwatch.ForNamespace("one")
 	mpOneA := swOne.MeteringPoint("a")
 	mpOneB := swOne.MeteringPoint("b")
-	swTwo := stopwatch.WithNamespace("two")
+	swTwo := stopwatch.ForNamespace("two")
 	mpTwoA := swTwo.MeteringPoint("a")
 
 	for i := 0; i < 1500; i++ {
