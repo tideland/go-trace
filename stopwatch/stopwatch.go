@@ -50,7 +50,7 @@ type MeteringPointValue struct {
 // String implements the fmt.Stringer interface.
 func (mpv MeteringPointValue) String() string {
 	return fmt.Sprintf(
-		"%s / %s / %d / %v / %v / %v / %v",
+		"[%s :: %s] %d / %v / %v / %v / %v",
 		mpv.Namespace,
 		mpv.ID,
 		mpv.Quantity,

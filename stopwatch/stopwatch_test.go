@@ -75,6 +75,7 @@ func TestMeasurings(t *testing.T) {
 	assert.Equal(mpv.ID, "a")
 	assert.Equal(mpv.Quantity, 1500)
 	assert.True(mpv.Minimum <= mpv.Average && mpv.Average <= mpv.Maximum)
+	assert.Logf("%v", mpv)
 
 	// Now for all metering points of one stopwatch.
 	mpvs := swOne.Values()
