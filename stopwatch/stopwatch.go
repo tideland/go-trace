@@ -12,6 +12,7 @@ package stopwatch // import "tideland.dev/go/trace/stopwatch"
 //--------------------
 
 import (
+	"fmt"
 	"sync"
 	"time"
 )
@@ -37,13 +38,27 @@ func (m *Measurement) Stop() {
 
 // MeteringPointValue contains the accumulated value of one metering point.
 type MeteringPointValue struct {
-	Namespace string
-	ID        string
-	Quantity  int
-	Total     time.Duration
-	Minimum   time.Duration
-	Maximum   time.Duration
-	Average   time.Duration
+	Namespace string        `json:"namespace"`
+	ID        string        `json:"id"`
+	Quantity  int           `json:"quantity"`
+	Total     time.Duration `json:"total"`
+	Minimum   time.Duration `json:"minimum"`
+	Maximum   time.Duration `json:"maximum"`
+	Average   time.Duration `json:"average"`
+}
+
+// String implements the fmt.Stringer interface.
+func (mpv MeteringPointValue) String() string {
+	return fmt.Sprintf(
+		"%s / %s / %d / %v / %v / %v / %v",
+		mpv.Namespace,
+		mpv.ID,
+		mpv.Quantity,
+		mpv.Total,
+		mpv.Minimum,
+		mpv.Maximum,
+		mpv.Average,
+	)
 }
 
 // MeteringPointValues contains a set of accumulated metering point values.
