@@ -95,7 +95,40 @@ func TestMeasurings(t *testing.T) {
 		assert.Equal(mpv.Quantity, 1500)
 		assert.True(mpv.Minimum <= mpv.Average && mpv.Average <= mpv.Maximum)
 	}
+}
 
+// TestReset checks the resetting of all watches.
+func TestReset(t *testing.T) {
+	assert := asserts.NewTesting(t, asserts.FailStop)
+	gen := generators.New(generators.FixedRand())
+
+	stopwatch.Reset()
+
+	swOne := stopwatch.ForNamespace("one")
+	mpOneA := swOne.MeteringPoint("a")
+	swTwo := stopwatch.ForNamespace("two")
+	mpTwoA := swTwo.MeteringPoint("a")
+
+	for i := 0; i < 500; i++ {
+		m := mpOneA.Start()
+		gen.SleepOneOf(1*time.Millisecond, 2*time.Millisecond, 3*time.Millisecond)
+		m.Stop()
+		m = mpTwoA.Start()
+		gen.SleepOneOf(1*time.Millisecond, 2*time.Millisecond, 3*time.Millisecond)
+		m.Stop()
+	}
+
+	// Check length.
+	mpvs := stopwatch.Values()
+	assert.Length(mpvs, 2)
+	for _, mpv := range mpvs {
+		assert.Equal(mpv.Quantity, 500)
+	}
+
+	// Reset and check length.
+	stopwatch.Reset()
+	mpvs = stopwatch.Values()
+	assert.Length(mpvs, 0)
 }
 
 // EOF

@@ -127,11 +127,11 @@ func (mp *MeteringPoint) accumulate() {
 			mp.maximum = duration
 		}
 	}
-	mp.reset()
+	mp.clearQueue()
 }
 
-// reset clears the measuring queue.
-func (mp *MeteringPoint) reset() {
+// clearQueue clears the measuring queue.
+func (mp *MeteringPoint) clearQueue() {
 	mp.queue = make([]time.Duration, 0, 1024)
 }
 
@@ -197,6 +197,15 @@ func Values() MeteringPointValues {
 	return mpvs
 }
 
+// Reset clears all stopwatches.
+func Reset() {
+	reg := initializedRegistry()
+	reg.mu.RLock()
+	defer reg.mu.RUnlock()
+	// Simply start with a new registry, rest is done by GC.
+	reg.watches = make(map[string]*Stopwatch)
+}
+
 //--------------------
 // STOPWATCH
 //--------------------
@@ -241,7 +250,7 @@ func (sw *Stopwatch) MeteringPoint(id string) *MeteringPoint {
 		owner: sw,
 		id:    id,
 	}
-	mp.reset()
+	mp.clearQueue()
 	sw.meteringPoints[id] = mp
 	sw.mu.Unlock()
 	return mp
