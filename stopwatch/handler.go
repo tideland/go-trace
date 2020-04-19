@@ -13,7 +13,6 @@ package stopwatch // import "tideland.dev/go/trace/stopwatch"
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 )
 
@@ -21,25 +20,42 @@ import (
 // HANDLER
 //--------------------
 
-// HandlerFunc implements the net/http
-func HandlerFunc(rw http.ResponseWriter, r *http.Request) {
+// Handler implements the http.Handler.
+type Handler struct{}
+
+// NewHandler returns an instance of a web handler for the
+// stopwatch.
+func NewHandler() Handler {
+	return Handler{}
+}
+
+// ServeHTTP implements the handling function.
+func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		// Retrieve all metering point values.
 		mpvs := Values()
-		enc := json.NewEncoder(rw)
+		enc := json.NewEncoder(w)
+		w.Header().Set("Content-Type", "application/json")
 		err := enc.Encode(mpvs)
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
+		w.WriteHeader(http.StatusOK)
 		return
 	case http.MethodDelete:
 		// Reset all metering point values.
 		Reset()
-		fmt.Fprintf(rw, "metering point values resetted")
+		enc := json.NewEncoder(w)
+		w.Header().Set("Content-Type", "application/json")
+		err := enc.Encode("metering point values resetted")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		w.WriteHeader(http.StatusOK)
 		return
 	}
-	http.Error(rw, "only GET and DELETE allowed", http.StatusMethodNotAllowed)
+	http.Error(w, "only GET and DELETE allowed", http.StatusMethodNotAllowed)
 }
 
 // EOF

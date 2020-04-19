@@ -5,7 +5,7 @@
 // All rights reserved. Use of this source code is governed
 // by the new BSD license.
 
-package stopwatch_test
+package stopwatch_test // import "tideland.dev/go/trace/stopwatch"
 
 //--------------------
 // IMPORTS
@@ -19,6 +19,28 @@ import (
 	"tideland.dev/go/audit/generators"
 	"tideland.dev/go/trace/stopwatch"
 )
+
+// generateMeasurings creates some measurings for the tests.
+func generateMeasurings() {
+	gen := generators.New(generators.FixedRand())
+	swOne := stopwatch.ForNamespace("one")
+	mpOneA := swOne.MeteringPoint("a")
+	mpOneB := swOne.MeteringPoint("b")
+	swTwo := stopwatch.ForNamespace("two")
+	mpTwoA := swTwo.MeteringPoint("a")
+
+	for i := 0; i < 777; i++ {
+		m := mpOneA.Start()
+		gen.SleepOneOf(1*time.Millisecond, 2*time.Millisecond)
+		m.Stop()
+		m = mpOneB.Start()
+		gen.SleepOneOf(2*time.Millisecond, 1*time.Millisecond)
+		m.Stop()
+		m = mpTwoA.Start()
+		gen.SleepOneOf(1*time.Millisecond, 2*time.Millisecond)
+		m.Stop()
+	}
+}
 
 //--------------------
 // TESTS
@@ -49,41 +71,24 @@ func TestCreateStopwatch(t *testing.T) {
 // TestMeasurings runs a number of measurings.
 func TestMeasurings(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
-	gen := generators.New(generators.FixedRand())
 
-	swOne := stopwatch.ForNamespace("one")
-	mpOneA := swOne.MeteringPoint("a")
-	mpOneB := swOne.MeteringPoint("b")
-	swTwo := stopwatch.ForNamespace("two")
-	mpTwoA := swTwo.MeteringPoint("a")
-
-	for i := 0; i < 1500; i++ {
-		m := mpOneA.Start()
-		gen.SleepOneOf(1*time.Millisecond, 2*time.Millisecond, 3*time.Millisecond)
-		m.Stop()
-		m = mpOneB.Start()
-		gen.SleepOneOf(1*time.Millisecond, 2*time.Millisecond, 3*time.Millisecond)
-		m.Stop()
-		m = mpTwoA.Start()
-		gen.SleepOneOf(1*time.Millisecond, 2*time.Millisecond, 3*time.Millisecond)
-		m.Stop()
-	}
+	generateMeasurings()
 
 	// Only for one metering point.
-	mpv := mpOneA.Value()
+	mpv := stopwatch.ForNamespace("one").MeteringPoint("a").Value()
 	assert.Equal(mpv.Namespace, "one")
 	assert.Equal(mpv.ID, "a")
-	assert.Equal(mpv.Quantity, 1500)
+	assert.Equal(mpv.Quantity, 777)
 	assert.True(mpv.Minimum <= mpv.Average && mpv.Average <= mpv.Maximum)
 	assert.Logf("%v", mpv)
 
 	// Now for all metering points of one stopwatch.
-	mpvs := swOne.Values()
+	mpvs := stopwatch.ForNamespace("one").Values()
 	assert.Length(mpvs, 2)
 	for _, mpv := range mpvs {
 		assert.Equal(mpv.Namespace, "one")
 		assert.True(mpv.ID == "a" || mpv.ID == "b")
-		assert.Equal(mpv.Quantity, 1500)
+		assert.Equal(mpv.Quantity, 777)
 		assert.True(mpv.Minimum <= mpv.Average && mpv.Average <= mpv.Maximum)
 	}
 
@@ -93,7 +98,7 @@ func TestMeasurings(t *testing.T) {
 	for _, mpv := range mpvs {
 		assert.True(mpv.Namespace == "one" || mpv.Namespace == "two")
 		assert.True(mpv.ID == "a" || mpv.ID == "b")
-		assert.Equal(mpv.Quantity, 1500)
+		assert.Equal(mpv.Quantity, 777)
 		assert.True(mpv.Minimum <= mpv.Average && mpv.Average <= mpv.Maximum)
 	}
 }
@@ -101,29 +106,15 @@ func TestMeasurings(t *testing.T) {
 // TestReset checks the resetting of all watches.
 func TestReset(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
-	gen := generators.New(generators.FixedRand())
 
 	stopwatch.Reset()
-
-	swOne := stopwatch.ForNamespace("one")
-	mpOneA := swOne.MeteringPoint("a")
-	swTwo := stopwatch.ForNamespace("two")
-	mpTwoA := swTwo.MeteringPoint("a")
-
-	for i := 0; i < 500; i++ {
-		m := mpOneA.Start()
-		gen.SleepOneOf(1*time.Millisecond, 2*time.Millisecond, 3*time.Millisecond)
-		m.Stop()
-		m = mpTwoA.Start()
-		gen.SleepOneOf(1*time.Millisecond, 2*time.Millisecond, 3*time.Millisecond)
-		m.Stop()
-	}
+	generateMeasurings()
 
 	// Check length.
 	mpvs := stopwatch.Values()
-	assert.Length(mpvs, 2)
+	assert.Length(mpvs, 3)
 	for _, mpv := range mpvs {
-		assert.Equal(mpv.Quantity, 500)
+		assert.Equal(mpv.Quantity, 777)
 	}
 
 	// Reset and check length.

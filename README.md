@@ -15,6 +15,7 @@
 * `location` allows to retrieve current file and line, helpful for errors and logging
 * `logging` is a more controllable logging with an exchangeable backend, e.g. syslog
 * `monitor` allows to measure runtimes and monitor variables
+* `stopwatch` allows to measure runtimes for different namespaces and metering points
 
 I hope you like it. ;)
 
