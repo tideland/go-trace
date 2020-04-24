@@ -163,7 +163,7 @@ type stopwatches struct {
 // once ensures only one initialization.
 var once sync.Once
 
-// registry contains all stopwatches by ID.
+// registry contains all stopwatches by namespace.
 var registry *stopwatches
 
 // initializedRegistry returns the registry for the stopwatches.
@@ -225,7 +225,7 @@ func Reset() {
 // STOPWATCH
 //--------------------
 
-// Stopwatch allows to measure the execution time at multiple reading
+// Stopwatch allows to measure the execution time at multiple reading points
 // in one namespace.
 type Stopwatch struct {
 	mu             sync.RWMutex
