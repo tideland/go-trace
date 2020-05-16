@@ -72,6 +72,8 @@ func TestCreateStopwatch(t *testing.T) {
 func TestMeasurings(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
 
+	stopwatch.Reset()
+
 	generateMeasurings()
 
 	// Only for one metering point.
@@ -82,7 +84,7 @@ func TestMeasurings(t *testing.T) {
 	assert.True(mpv.Minimum <= mpv.Average && mpv.Average <= mpv.Maximum)
 	assert.Logf("%v", mpv)
 
-	// Now for all metering points of one stopwatch.
+	// Now for all metering points of one namespace.
 	mpvs := stopwatch.ForNamespace("one").Values()
 	assert.Length(mpvs, 2)
 	for _, mpv := range mpvs {
@@ -113,9 +115,6 @@ func TestReset(t *testing.T) {
 	// Check length.
 	mpvs := stopwatch.Values()
 	assert.Length(mpvs, 3)
-	for _, mpv := range mpvs {
-		assert.Equal(mpv.Quantity, 777)
-	}
 
 	// Reset and check length.
 	stopwatch.Reset()

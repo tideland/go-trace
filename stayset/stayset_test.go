@@ -8,9 +8,7 @@
 package stayset_test // import "tideland.dev/go/trace/stayset"
 
 import (
-	"sync"
 	"testing"
-	"time"
 
 	"tideland.dev/go/audit/asserts"
 	"tideland.dev/go/audit/generators"
@@ -18,7 +16,7 @@ import (
 )
 
 // generateIndicators creates some indicators for the tests.
-func generateIndicators() {
+func generateIndicators() [3]int {
 	gen := generators.New(generators.FixedRand())
 	ssiOne := stayset.ForNamespace("one")
 	ssiOneA := ssiOne.IndicatorPoint("a")
@@ -26,22 +24,28 @@ func generateIndicators() {
 	ssiTwo := stayset.ForNamespace("two")
 	ssiTwoA := ssiTwo.IndicatorPoint("a")
 	points := []*stayset.IndicatorPoint{ssiOneA, ssiOneB, ssiTwoA}
-
-	var wg sync.WaitGroup
-	wg.Add(2500)
+	pointQueues := [3][]stayset.Indication{}
+	quantities := [3]int{}
 
 	for j := 0; j < 2500; j++ {
-		go func() {
-			b := gen.OneByteOf(0, 1, 2, 1, 2, 2)
-			point := points[b]
-			i := point.Start()
-			gen.SleepOneOf(1*time.Millisecond, 2*time.Millisecond, 4*time.Millisecond)
+		b := gen.OneByteOf(0, 1, 2, 1, 2, 2)
+		if gen.FlipCoin(40) {
+			// Start indication.
+			p := points[b]
+			i := p.Start()
+			pointQueues[b] = append(pointQueues[b], i)
+			quantities[b]++
+			continue
+		}
+		// Stop indication.
+		if len(pointQueues[b]) > 0 {
+			i := pointQueues[b][0]
+			pointQueues[b] = pointQueues[b][1:]
 			i.Stop()
-			wg.Done()
-		}()
+		}
 	}
 
-	wg.Wait()
+	return quantities
 }
 
 //--------------------
@@ -74,16 +78,60 @@ func TestCreateSSI(t *testing.T) {
 func TestIndicators(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
 
-	generateIndicators()
+	stayset.Reset()
+
+	quantities := generateIndicators()
 
 	// Only for one indicator.
-	iv := stayset.ForNamespace("one").IndicatorPoint("a").Value()
-	assert.Equal(iv.Namespace, "one")
-	assert.Equal(iv.ID, "a")
-	assert.Range(iv.Quantity, 400, 450)
-	assert.Equal(iv.Minimum, 0)
-	assert.Range(iv.Maximum, 250, 300)
-	assert.Logf("%v", iv)
+	ipv := stayset.ForNamespace("one").IndicatorPoint("a").Value()
+	assert.Equal(ipv.Namespace, "one")
+	assert.Equal(ipv.ID, "a")
+	assert.Range(ipv.Quantity, 0, quantities[0])
+	assert.Equal(ipv.Minimum, 0)
+	assert.Range(ipv.Maximum, 0, ipv.Quantity)
+	assert.Logf("%v", ipv)
+
+	// Only for one indicator with pre-set value.
+	ipv = stayset.ForNamespace("one").IndicatorPoint("b").Value()
+	assert.Equal(ipv.Namespace, "one")
+	assert.Equal(ipv.ID, "b")
+	assert.Range(ipv.Quantity, 0, quantities[1])
+	assert.Equal(ipv.Minimum, 10)
+	assert.Range(ipv.Maximum, 10, ipv.Quantity)
+	assert.Logf("%v", ipv)
+
+	// Now for all indicators of one namespace.
+	ipvs := stayset.ForNamespace("one").Values()
+	assert.Length(ipvs, 2)
+	for _, ipv := range ipvs {
+		assert.Equal(ipv.Namespace, "one")
+		assert.True(ipv.ID == "a" || ipv.ID == "b")
+	}
+
+	// Now for all indicators points.
+	ipvs = stayset.Values()
+	assert.Length(ipvs, 3)
+	for _, ipv := range ipvs {
+		assert.True(ipv.Namespace == "one" || ipv.Namespace == "two")
+		assert.True(ipv.ID == "a" || ipv.ID == "b")
+	}
+}
+
+// TestReset checks the resetting of all watches.
+func TestReset(t *testing.T) {
+	assert := asserts.NewTesting(t, asserts.FailStop)
+
+	stayset.Reset()
+	_ = generateIndicators()
+
+	// Check length.
+	ipvs := stayset.Values()
+	assert.Length(ipvs, 3)
+
+	// Reset and check length.
+	stayset.Reset()
+	ipvs = stayset.Values()
+	assert.Length(ipvs, 0)
 }
 
 // EOF
