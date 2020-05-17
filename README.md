@@ -22,7 +22,7 @@ I hope you like it. ;)
 
 ## Contributors
 
-- Frank Mueller (https://github.com/themue / https://github.com/tideland / https://tideland.dev)
+* Frank Mueller ([https://themue.dev/](https://themue.dev/))
 
 ## License
 
