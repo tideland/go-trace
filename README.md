@@ -11,6 +11,7 @@
 
 **Tideland Go Trace** helps running applications and servers.
 
+* `crumbs` provides a flexible and convenient logging package with an exchangeable backend
 * `failure` is a more powerful error management than the standard package
 * `location` allows to retrieve current file and line, helpful for errors and logging
 * `logging` is a more controllable logging with an exchangeable backend, e.g. syslog
