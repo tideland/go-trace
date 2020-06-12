@@ -7,15 +7,22 @@
 
 package crumbs // import "tideland.dev/go/trace/crumbs"
 
+//--------------------
+// CRUMBS
+//--------------------
+
 // Crumbs is the entry poing for all logging.
 type Crumbs struct {
 	level byte
+	empty CrumbsWriter
+	grain CrumbsWriter
 }
 
 // New creates and initializes a new crumbs instances.
 func New(options ...Option) *Crumbs {
 	c := &Crumbs{
 		level: 0,
+		empty: &emptyCrumbWriter{},
 	}
 	for _, option := range options {
 		option(c)
@@ -26,10 +33,9 @@ func New(options ...Option) *Crumbs {
 // L returns a leveled crumb writer.
 func (c *Crumbs) L(level byte) CrumbWriter {
 	if level < c.level {
-		return &emptyCrumbWriter{}
+		return c.empty
 	}
-
-	return nil
+	return c.grain
 }
 
 // EOF

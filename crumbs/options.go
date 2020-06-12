@@ -10,11 +10,12 @@ package crumbs // import "tideland.dev/go/trace/crumbs"
 // Option is a function able to configure the Crumbs.
 type Option func(c *Crumbs)
 
-// Level sets the Crumbs level for logging. All writer with
-// lower level don't write any output.
+// Level sets the Crumbs level for logging. Default is 0.
 func Level(level byte) Option {
 	return func(c *Crumbs) {
-		c.level = level
+		if level >= 0 {
+			c.level = level
+		}
 	}
 }
 
