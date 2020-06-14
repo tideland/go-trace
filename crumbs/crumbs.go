@@ -14,8 +14,8 @@ package crumbs // import "tideland.dev/go/trace/crumbs"
 // Crumbs is the entry poing for all logging.
 type Crumbs struct {
 	level byte
-	empty CrumbsWriter
-	grain CrumbsWriter
+	empty CrumbWriter
+	grain CrumbWriter
 }
 
 // New creates and initializes a new crumbs instances.
