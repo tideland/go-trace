@@ -19,7 +19,8 @@ func Level(level byte) Option {
 	}
 }
 
-// Tray sets the GrainTray backend. Default is the StandardLoggerTray.
+// Tray sets the GrainTray backend. Default is the WriterGrainTray
+// on stdout.
 func Tray(tray GrainTray) Option {
 	return func(c *Crumbs) {
 		if tray != nil {

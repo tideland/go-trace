@@ -35,16 +35,16 @@ const (
 
 // GrainKeyValue contains one of the key/values pairs or a Grain.
 type GrainKeyValue struct {
-	Key   string
-	Value interface{}
+	Key   string      `json:"key"`
+	Value interface{} `json:"value"`
 }
 
 // Grain contains all data to log.
 type Grain struct {
-	Timestamp time.Time
-	Kind      GrainKind
-	Message   string
-	KeyValues []GrainKeyValue
+	Timestamp time.Time       `json:"timestamp"`
+	Kind      GrainKind       `json:"kind"`
+	Message   string          `json:"message"`
+	KeyValues []GrainKeyValue `json:"key_values"`
 }
 
 // newGrain parses the keys and values and creates a Grain.
@@ -61,14 +61,14 @@ func newGrain(kind GrainKind, msg string, keysAndValues ...interface{}) *Grain {
 		case i%2 == 0 && i == last:
 			g.KeyValues = append(g.KeyValues, GrainKeyValue{
 				Key:   fmt.Sprintf("%v", kv),
-				value: true,
+				Value: true,
 			})
 		case i%2 == 0:
 			key = fmt.Sprintf("%v", kv)
 		default:
 			g.KeyValues = append(g.KeyValues, GrainKeyValue{
 				Key:   key,
-				value: kv,
+				Value: kv,
 			})
 			key = ""
 		}

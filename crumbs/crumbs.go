@@ -8,14 +8,22 @@
 package crumbs // import "tideland.dev/go/trace/crumbs"
 
 //--------------------
+// IMPORTS
+//--------------------
+
+import (
+	"os"
+)
+
+//--------------------
 // CRUMBS
 //--------------------
 
 // Crumbs is the entry poing for all logging.
 type Crumbs struct {
 	level byte
-	empty CrumbWriter
-	grain CrumbWriter
+	empty *emptyCrumbWriter
+	grain *grainCrumbWriter
 }
 
 // New creates and initializes a new crumbs instances.
@@ -23,6 +31,9 @@ func New(options ...Option) *Crumbs {
 	c := &Crumbs{
 		level: 0,
 		empty: &emptyCrumbWriter{},
+		grain: &grainCrumbWriter{
+			tray: NewWriterGrainTray(os.Stdout),
+		},
 	}
 	for _, option := range options {
 		option(c)
