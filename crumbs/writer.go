@@ -58,7 +58,8 @@ func (w *grainCrumbWriter) Info(msg string, keysAndValues ...interface{}) error 
 
 // Error implements CrumbWriter.
 func (w *grainCrumbWriter) Error(err error, msg string, keysAndValues ...interface{}) error {
-	g := newGrain(ErrorGrain, msg, keysAndValues...)
+	errKeysAndValues := append([]interface{}{"error", err.Error()}, keysAndValues...)
+	g := newGrain(ErrorGrain, msg, errKeysAndValues...)
 	return w.tray.Put(g)
 }
 

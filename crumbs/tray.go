@@ -53,7 +53,7 @@ func (t *WriterGrainTray) Put(grain *Grain) error {
 	if err != nil {
 		return fmt.Errorf("writer grain tray: cannot put grain: %v", err)
 	}
-	_, err = fmt.Fprintf(t.out, "%s (%s) %s %s", ts, ks, grain.Message, string(kvs))
+	_, err = fmt.Fprintf(t.out, "%s (%s) %s %s\n", ts, ks, grain.Message, string(kvs))
 	if err != nil {
 		return fmt.Errorf("writer grain tray: cannot put grain: %v", err)
 	}

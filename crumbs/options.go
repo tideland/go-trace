@@ -13,9 +13,7 @@ type Option func(c *Crumbs)
 // Level sets the Crumbs level for logging. Default is 0.
 func Level(level byte) Option {
 	return func(c *Crumbs) {
-		if level >= 0 {
-			c.level = level
-		}
+		c.level = level
 	}
 }
 
