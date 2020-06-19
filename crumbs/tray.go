@@ -15,6 +15,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"time"
 )
 
@@ -57,6 +58,33 @@ func (t *WriterGrainTray) Put(grain *Grain) error {
 	if err != nil {
 		return fmt.Errorf("writer grain tray: cannot put grain: %v", err)
 	}
+	return nil
+}
+
+//--------------------
+// LOGGER GRAIN TRAY
+//--------------------
+
+// LoggerGrainTray writes the grain to the configured Logger.
+type LoggerGrainTray struct {
+	logger *log.Logger
+}
+
+// NewLoggerGrainTray creates a LoggerGrainTray with the given Logger.
+func NewLoggerGrainTray(logger *log.Logger) *LoggerGrainTray {
+	return &LoggerGrainTray{
+		logger: logger,
+	}
+}
+
+// Put implements GrainTray.
+func (t *LoggerGrainTray) Put(grain *Grain) error {
+	ks := []string{"info", "error"}[grain.Kind]
+	kvs, err := json.Marshal(grain.KeyValues)
+	if err != nil {
+		return fmt.Errorf("logger grain tray: cannot put grain: %v", err)
+	}
+	t.logger.Printf("(%s) %s %s\n", ks, grain.Message, string(kvs))
 	return nil
 }
 
