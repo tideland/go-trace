@@ -63,14 +63,14 @@ func TestDefaultWriter(t *testing.T) {
 
 		c.L(0).Info("info test", "a", 1, "a", 2)
 	})
-	assert.Contains(`(info) info test [{"key":"a","value":1},{"key":"a","value":2}]`, cout.String())
+	assert.Contains(`"kind":"info","message":"info test","infos":[{"key":"a","value":1},{"key":"a","value":2}]`, cout.String())
 
 	cout = capture.Stdout(func() {
 		c := crumbs.New()
 
 		c.L(0).Error(errors.New("test"), "error test", "done")
 	})
-	assert.Contains(`(error) error test [{"key":"error","value":"test"},{"key":"done","value":true}]`, cout.String())
+	assert.Contains(`"kind":"error","message":"error test","infos":[{"key":"error","value":"test"},{"key":"done","value":true}]`, cout.String())
 }
 
 // EOF

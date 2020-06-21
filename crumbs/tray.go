@@ -12,11 +12,9 @@ package crumbs // import "tideland.dev/go/trace/crumbs"
 //--------------------
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
-	"time"
 )
 
 //--------------------
@@ -48,13 +46,7 @@ func NewWriterGrainTray(out io.Writer) *WriterGrainTray {
 
 // Put implements GrainTray.
 func (t *WriterGrainTray) Put(grain *Grain) error {
-	ts := grain.Timestamp.Format(time.RFC3339Nano)
-	ks := []string{"info", "error"}[grain.Kind]
-	kvs, err := json.Marshal(grain.KeyValues)
-	if err != nil {
-		return fmt.Errorf("writer grain tray: cannot put grain: %v", err)
-	}
-	_, err = fmt.Fprintf(t.out, "%s (%s) %s %s\n", ts, ks, grain.Message, string(kvs))
+	_, err := fmt.Fprintf(t.out, grain.String())
 	if err != nil {
 		return fmt.Errorf("writer grain tray: cannot put grain: %v", err)
 	}
@@ -79,12 +71,7 @@ func NewLoggerGrainTray(logger *log.Logger) *LoggerGrainTray {
 
 // Put implements GrainTray.
 func (t *LoggerGrainTray) Put(grain *Grain) error {
-	ks := []string{"info", "error"}[grain.Kind]
-	kvs, err := json.Marshal(grain.KeyValues)
-	if err != nil {
-		return fmt.Errorf("logger grain tray: cannot put grain: %v", err)
-	}
-	t.logger.Printf("(%s) %s %s\n", ks, grain.Message, string(kvs))
+	t.logger.Printf(grain.String())
 	return nil
 }
 

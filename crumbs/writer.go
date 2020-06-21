@@ -16,11 +16,11 @@ package crumbs // import "tideland.dev/go/trace/crumbs"
 type CrumbWriter interface {
 	// Info logs messages with key/value pairs of additional
 	// information.
-	Info(msg string, keysAndValues ...interface{}) error
+	Info(msg string, infos ...interface{}) error
 
 	// Error logs errors with an additional message and key/value
 	// pairs of additional information.
-	Error(err error, msg string, keysAndValues ...interface{}) error
+	Error(err error, msg string, infos ...interface{}) error
 }
 
 //--------------------
@@ -32,12 +32,12 @@ type CrumbWriter interface {
 type emptyCrumbWriter struct{}
 
 // Info implements CrumbWriter.
-func (w *emptyCrumbWriter) Info(msg string, keysAndValues ...interface{}) error {
+func (w *emptyCrumbWriter) Info(msg string, infos ...interface{}) error {
 	return nil
 }
 
 // Error implements CrumbWriter.
-func (w *emptyCrumbWriter) Error(err error, msg string, keysAndValues ...interface{}) error {
+func (w *emptyCrumbWriter) Error(err error, msg string, infos ...interface{}) error {
 	return nil
 }
 
@@ -51,15 +51,15 @@ type grainCrumbWriter struct {
 }
 
 // Info implements CrumbWriter.
-func (w *grainCrumbWriter) Info(msg string, keysAndValues ...interface{}) error {
-	g := newGrain(InfoGrain, msg, keysAndValues...)
+func (w *grainCrumbWriter) Info(msg string, infos ...interface{}) error {
+	g := newGrain(InfoGrain, msg, infos...)
 	return w.tray.Put(g)
 }
 
 // Error implements CrumbWriter.
-func (w *grainCrumbWriter) Error(err error, msg string, keysAndValues ...interface{}) error {
-	errKeysAndValues := append([]interface{}{"error", err.Error()}, keysAndValues...)
-	g := newGrain(ErrorGrain, msg, errKeysAndValues...)
+func (w *grainCrumbWriter) Error(err error, msg string, infos ...interface{}) error {
+	errInfos := append([]interface{}{"error", err.Error()}, infos...)
+	g := newGrain(ErrorGrain, msg, errInfos...)
 	return w.tray.Put(g)
 }
 
