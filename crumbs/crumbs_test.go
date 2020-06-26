@@ -12,6 +12,7 @@ package crumbs_test // import "tideland.dev/go/trace/crumbs"
 //--------------------
 
 import (
+	"bytes"
 	"errors"
 	"testing"
 
@@ -71,6 +72,21 @@ func TestDefaultWriter(t *testing.T) {
 		assert.NoError(c.L(0).Error(errors.New("test"), "error test", "done"))
 	})
 	assert.Contains(`"kind":"error","message":"error test","infos":[{"key":"error","value":"test"},{"key":"done","value":true}]`, cout.String())
+}
+
+// TestOwnWriter creates a Crumb with the CrumWriter
+// using the WriterGrainTray writing to an own Writer.
+func TestOwnWriter(t *testing.T) {
+	assert := asserts.NewTesting(t, asserts.FailStop)
+	buf := bytes.Buffer{}
+	gt := crumbs.NewWriterGrainTray(&buf)
+	c := crumbs.New(crumbs.Tray(gt))
+
+	assert.NoError(c.L(0).Info("info test", "a", 1, "a", 2))
+	assert.Contains(`"kind":"info","message":"info test","infos":[{"key":"a","value":1},{"key":"a","value":2}]`, buf.String())
+
+	assert.NoError(c.L(0).Error(errors.New("test"), "error test", "done"))
+	assert.Contains(`"kind":"error","message":"error test","infos":[{"key":"error","value":"test"},{"key":"done","value":true}]`, buf.String())
 }
 
 // EOF
