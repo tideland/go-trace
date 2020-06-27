@@ -14,6 +14,7 @@ package crumbs_test // import "tideland.dev/go/trace/crumbs"
 import (
 	"bytes"
 	"errors"
+	"log"
 	"testing"
 
 	"tideland.dev/go/audit/asserts"
@@ -54,8 +55,8 @@ func TestDifferentLevelWriter(t *testing.T) {
 	assert.Equal(cw1, cw2)
 }
 
-// TestDefaultWriter creates a default Crumb with the CrumWriter
-// using the WriterGrainTray writing to stdout.
+// TestDefaultWriter creates a default Crumb using the
+// WriterGrainTray writing to stdout.
 func TestDefaultWriter(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
 
@@ -74,12 +75,27 @@ func TestDefaultWriter(t *testing.T) {
 	assert.Contains(`"kind":"error","message":"error test","infos":[{"key":"error","value":"test"},{"key":"done","value":true}]`, cout.String())
 }
 
-// TestOwnWriter creates a Crumb with the CrumWriter
-// using the WriterGrainTray writing to an own Writer.
+// TestOwnWriter creates a Crumb using the WriterGrainTray
+// writing to an own Writer.
 func TestOwnWriter(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
 	buf := bytes.Buffer{}
 	gt := crumbs.NewWriterGrainTray(&buf)
+	c := crumbs.New(crumbs.Tray(gt))
+
+	assert.NoError(c.L(0).Info("info test", "a", 1, "a", 2))
+	assert.Contains(`"kind":"info","message":"info test","infos":[{"key":"a","value":1},{"key":"a","value":2}]`, buf.String())
+
+	assert.NoError(c.L(0).Error(errors.New("test"), "error test", "done"))
+	assert.Contains(`"kind":"error","message":"error test","infos":[{"key":"error","value":"test"},{"key":"done","value":true}]`, buf.String())
+}
+
+// TestLoggerWriter creates a Crumb using the LoggerGrainTray.
+func TestLoggerWriter(t *testing.T) {
+	assert := asserts.NewTesting(t, asserts.FailStop)
+	buf := bytes.Buffer{}
+	l := log.New(&buf, "crumbs", 0)
+	gt := crumbs.NewLoggerGrainTray(l)
 	c := crumbs.New(crumbs.Tray(gt))
 
 	assert.NoError(c.L(0).Info("info test", "a", 1, "a", 2))
