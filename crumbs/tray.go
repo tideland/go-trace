@@ -46,7 +46,7 @@ func NewWriterGrainTray(out io.Writer) *WriterGrainTray {
 
 // Put implements GrainTray.
 func (t *WriterGrainTray) Put(grain *Grain) error {
-	_, err := fmt.Fprintf(t.out, grain.String())
+	_, err := fmt.Fprintln(t.out, grain.String())
 	if err != nil {
 		return fmt.Errorf("writer grain tray: cannot put grain: %v", err)
 	}
@@ -71,7 +71,7 @@ func NewLoggerGrainTray(logger *log.Logger) *LoggerGrainTray {
 
 // Put implements GrainTray.
 func (t *LoggerGrainTray) Put(grain *Grain) error {
-	t.logger.Printf(grain.String())
+	t.logger.Println(grain.String())
 	return nil
 }
 

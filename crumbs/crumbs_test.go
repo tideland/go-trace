@@ -13,6 +13,7 @@ package crumbs_test // import "tideland.dev/go/trace/crumbs"
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"log"
 	"testing"
@@ -41,8 +42,8 @@ func TestNewDefault(t *testing.T) {
 	assert.Equal(cw0, cw1)
 }
 
-// TestDifferentLevelWriter creates a Crumb with level 1.
-// So L() returns defferent CrumbWriter.
+// TestDifferentLevelWriter tests a Crumb with level 1.
+// So L() returns different CrumbWriter.
 func TestDifferentLevelWriter(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
 	c := crumbs.New(crumbs.Level(1))
@@ -55,7 +56,7 @@ func TestDifferentLevelWriter(t *testing.T) {
 	assert.Equal(cw1, cw2)
 }
 
-// TestDefaultWriter creates a default Crumb using the
+// TestDefaultWriter tests a default Crumb using the
 // WriterGrainTray writing to stdout.
 func TestDefaultWriter(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
@@ -75,7 +76,7 @@ func TestDefaultWriter(t *testing.T) {
 	assert.Contains(`"kind":"error","message":"error test","infos":[{"key":"error","value":"test"},{"key":"done","value":true}]`, cout.String())
 }
 
-// TestOwnWriter creates a Crumb using the WriterGrainTray
+// TestOwnWriter tests a Crumb using the WriterGrainTray
 // writing to an own Writer.
 func TestOwnWriter(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
@@ -90,7 +91,7 @@ func TestOwnWriter(t *testing.T) {
 	assert.Contains(`"kind":"error","message":"error test","infos":[{"key":"error","value":"test"},{"key":"done","value":true}]`, buf.String())
 }
 
-// TestLoggerWriter creates a Crumb using the LoggerGrainTray.
+// TestLoggerWriter tests a Crumb using the LoggerGrainTray.
 func TestLoggerWriter(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
 	buf := bytes.Buffer{}
@@ -103,6 +104,38 @@ func TestLoggerWriter(t *testing.T) {
 
 	assert.NoError(c.L(0).Error(errors.New("test"), "error test", "done"))
 	assert.Contains(`"kind":"error","message":"error test","infos":[{"key":"error","value":"test"},{"key":"done","value":true}]`, buf.String())
+}
+
+// TestContext tests the transport of a Crumb inside a Context.
+func TestContext(t *testing.T) {
+	assert := asserts.NewTesting(t, asserts.FailStop)
+	cwIn := crumbs.New().L(0)
+	ctxIn := context.Background()
+	ctxOut := crumbs.NewContext(ctxIn, cwIn)
+	cwOut, ok := crumbs.FromContext(ctxOut)
+
+	assert.OK(ok)
+	assert.Different(ctxIn, ctxOut)
+	assert.Equal(cwIn, cwOut)
+
+	assert.NoError(cwOut.Info("done"))
+}
+
+// TestCrumble tests the defer helper function Crumble.
+func TestCrumble(t *testing.T) {
+	assert := asserts.NewTesting(t, asserts.FailStop)
+	buf := bytes.Buffer{}
+	gt := crumbs.NewWriterGrainTray(&buf)
+	cw := crumbs.New(crumbs.Tray(gt)).L(0)
+	fDefer := func() {
+		defer crumbs.Crumble(cw, func() error { return nil }, "ok")
+		defer crumbs.Crumble(cw, func() error { return errors.New("failed") }, "failed")
+	}
+
+	fDefer()
+
+	assert.NotContains("ok", buf.String())
+	assert.Contains("failed", buf.String())
 }
 
 // EOF
