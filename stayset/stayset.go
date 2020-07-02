@@ -220,7 +220,7 @@ func ForNamespace(namespace string) *SSI {
 }
 
 // IndicatorPointWithValue returns a new or already existing indicator point
-// with the given ID and and intial value. In case it's already existing the
+// with the given ID and and initial value. In case it's already existing the
 // value isn't changed anymore.
 func (ssi *SSI) IndicatorPointWithValue(id string, value int) *IndicatorPoint {
 	// First check for existing metering point.

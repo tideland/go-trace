@@ -1,0 +1,37 @@
+run:
+  deadline: 20m
+
+linters:
+  enable:
+    - bodyclose
+    - deadcode
+    - dupl
+    - errcheck
+    - funlen
+    - goconst
+    - gocritic
+    - gocyclo
+    - godot
+    - gofmt
+    - goimports
+    - golint
+    - gomodguard
+    - gosimple
+    - govet
+    - ineffassign
+    - interfacer
+    - misspell
+    - staticcheck
+    - structcheck
+    - typecheck
+    - unconvert
+    - unused
+    - varcheck
+    - whitespace
+
+  disable-all: true
+
+issues:
+  exclude:
+  # gocyclo
+  - cyclomatic complexity [0-9]+ of func `main` is high

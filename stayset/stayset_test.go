@@ -29,18 +29,21 @@ func generateIndicators() [3]int {
 
 	for j := 0; j < 2500; j++ {
 		b := gen.OneByteOf(0, 1, 2, 1, 2, 2)
+
 		if gen.FlipCoin(40) {
 			// Start indication.
 			p := points[b]
 			i := p.Start()
 			pointQueues[b] = append(pointQueues[b], i)
 			quantities[b]++
+
 			continue
 		}
 		// Stop indication.
 		if len(pointQueues[b]) > 0 {
 			i := pointQueues[b][0]
 			pointQueues[b] = pointQueues[b][1:]
+
 			i.Stop()
 		}
 	}
@@ -102,7 +105,9 @@ func TestIndicators(t *testing.T) {
 
 	// Now for all indicators of one namespace.
 	ipvs := stayset.ForNamespace("one").Values()
+
 	assert.Length(ipvs, 2)
+
 	for _, ipv := range ipvs {
 		assert.Equal(ipv.Namespace, "one")
 		assert.True(ipv.ID == "a" || ipv.ID == "b")
@@ -110,7 +115,9 @@ func TestIndicators(t *testing.T) {
 
 	// Now for all indicators points.
 	ipvs = stayset.Values()
+
 	assert.Length(ipvs, 3)
+
 	for _, ipv := range ipvs {
 		assert.True(ipv.Namespace == "one" || ipv.Namespace == "two")
 		assert.True(ipv.ID == "a" || ipv.ID == "b")

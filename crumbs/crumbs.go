@@ -54,7 +54,9 @@ func (c *Crumbs) L(level byte) CrumbWriter {
 // be written with the given message and values.
 func Crumble(cw CrumbWriter, f func() error, msg string, infos ...interface{}) {
 	if err := f(); err != nil {
-		cw.Error(err, msg, infos...)
+		if cwErr := cw.Error(err, msg, infos...); cwErr != nil {
+			panic("cannot crumble error:" + cwErr.Error())
+		}
 	}
 }
 
