@@ -22,7 +22,7 @@ import (
 // contextKey describes the type of the context key.
 type contextKey int
 
-// crumbsContextKey is the context key for a Crumbs.
+// crumbsContextKey is the context key for a CrumbWriter.
 const crumbsContextKey contextKey = 1
 
 // NewContext creates a context containing a CrumbWriter.

@@ -37,12 +37,13 @@ func startWebAsserter(assert *asserts.Asserts) *environments.WebAsserter {
 // TestWebValues tests retrieving the values via web handler.
 func TestWebValues(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
+	r := stayset.New()
 	wa := startWebAsserter(assert)
 	defer wa.Close()
 
-	_ = generateIndicators()
+	_ = generateIndicators(r)
 
-	wa.Handle("/stayset/", stayset.NewHandler())
+	wa.Handle("/stayset/", stayset.NewHandler(r))
 
 	wreq := wa.CreateRequest(http.MethodGet, "/stayset/")
 	wresp := wreq.Do()
@@ -56,12 +57,13 @@ func TestWebValues(t *testing.T) {
 // TestWebReset tests resetting the values via web handler.
 func TestWebReset(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
+	r := stayset.New()
 	wa := startWebAsserter(assert)
 	defer wa.Close()
 
-	_ = generateIndicators()
+	_ = generateIndicators(r)
 
-	wa.Handle("/stayset/", stayset.NewHandler())
+	wa.Handle("/stayset/", stayset.NewHandler(r))
 
 	wreq := wa.CreateRequest(http.MethodDelete, "/stayset/")
 	wresp := wreq.Do()
@@ -73,10 +75,11 @@ func TestWebReset(t *testing.T) {
 // TestWebIllegal tests the handler with an illegal HTTP method.
 func TestWebIllegal(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
+	r := stayset.New()
 	wa := startWebAsserter(assert)
 	defer wa.Close()
 
-	wa.Handle("/stayset/", stayset.NewHandler())
+	wa.Handle("/stayset/", stayset.NewHandler(r))
 
 	wreq := wa.CreateRequest(http.MethodPost, "/stayset/")
 	wresp := wreq.Do()

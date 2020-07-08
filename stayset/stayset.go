@@ -121,77 +121,6 @@ func (ip *IndicatorPoint) stopIndication() {
 }
 
 //--------------------
-// REGISTRY
-//--------------------
-
-// ssis is the register type for all SSIs.
-type ssis struct {
-	mu   sync.RWMutex
-	ssis map[string]*SSI
-}
-
-// once ensures only one initialization.
-var once sync.Once
-
-// registry contains all indicators by namespace.
-var registry *ssis
-
-// initializedRegistry returns the registry for the stopwatches.
-func initializedRegistry() *ssis {
-	once.Do(func() {
-		if registry == nil {
-			registry = &ssis{
-				ssis: make(map[string]*SSI),
-			}
-		}
-	})
-	return registry
-}
-
-// load retrieves an already registered indicator or signals if it
-// doesn't exist.
-func (s *ssis) load(namespace string) (*SSI, bool) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	i, ok := s.ssis[namespace]
-	return i, ok
-}
-
-// store checks if the namespace already exists and possibly returns it.
-// Otherwise it registers the given one and returns that.
-func (s *ssis) store(namespace string, ssi *SSI) *SSI {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	issi, ok := s.ssis[namespace]
-	if ok {
-		return issi
-	}
-	s.ssis[namespace] = ssi
-	return ssi
-}
-
-// Values returns the values of all metering points.
-func Values() IndicatorPointValues {
-	ipvs := IndicatorPointValues{}
-	reg := initializedRegistry()
-	reg.mu.RLock()
-	defer reg.mu.RUnlock()
-	for _, ssi := range reg.ssis {
-		ipvs = append(ipvs, ssi.Values()...)
-	}
-	return ipvs
-}
-
-// Reset clears all indicators.
-func Reset() {
-	reg := initializedRegistry()
-	reg.mu.RLock()
-	defer reg.mu.RUnlock()
-	// Simply start with a new registry, rest is done by GC.
-	reg.ssis = make(map[string]*SSI)
-}
-
-//--------------------
 // STAY-SET INDICATOR
 //--------------------
 
@@ -201,22 +130,6 @@ type SSI struct {
 	mu              sync.RWMutex
 	namespace       string
 	indicatorPoints map[string]*IndicatorPoint
-}
-
-// ForNamespace returns an instance of a SSI with the given namespace.
-// In case that namespace is already in use that SSI will be returned.
-func ForNamespace(namespace string) *SSI {
-	// Check for alreadoy registered stopwatch.
-	ssi, ok := initializedRegistry().load(namespace)
-	if ok {
-		return ssi
-	}
-	// Create new SSI and register it.
-	ssi = &SSI{
-		namespace:       namespace,
-		indicatorPoints: make(map[string]*IndicatorPoint),
-	}
-	return initializedRegistry().store(namespace, ssi)
 }
 
 // IndicatorPointWithValue returns a new or already existing indicator point
@@ -261,6 +174,63 @@ func (ssi *SSI) Values() IndicatorPointValues {
 		i++
 	}
 	return ipvs
+}
+
+//--------------------
+// REGISTRY
+//--------------------
+
+// Registry is the register type for a number of SSIs.
+type Registry struct {
+	mu   sync.RWMutex
+	ssis map[string]*SSI
+}
+
+// New returns a registry for stay-set indicators.
+func New() *Registry {
+	r := &Registry{
+		ssis: make(map[string]*SSI),
+	}
+	return r
+}
+
+// ForNamespace returns an instance of a SSI with the given namespace.
+// In case that namespace is already in use that SSI will be returned.
+func (r *Registry) ForNamespace(namespace string) *SSI {
+	r.mu.RLock()
+	ssi, ok := r.ssis[namespace]
+	r.mu.RUnlock()
+	// Check if found.
+	if ok {
+		return ssi
+	}
+	// Not found, create SSI.
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	ssi = &SSI{
+		namespace:       namespace,
+		indicatorPoints: make(map[string]*IndicatorPoint),
+	}
+	r.ssis[namespace] = ssi
+	return ssi
+}
+
+// Values returns the values of all metering points.
+func (r *Registry) Values() IndicatorPointValues {
+	ipvs := IndicatorPointValues{}
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	for _, ssi := range r.ssis {
+		ipvs = append(ipvs, ssi.Values()...)
+	}
+	return ipvs
+}
+
+// Reset clears all namespaces.
+func (r *Registry) Reset() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.ssis = make(map[string]*SSI)
 }
 
 // EOF

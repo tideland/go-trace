@@ -16,12 +16,12 @@ import (
 )
 
 // generateIndicators creates some indicators for the tests.
-func generateIndicators() [3]int {
+func generateIndicators(r *stayset.Registry) [3]int {
 	gen := generators.New(generators.FixedRand())
-	ssiOne := stayset.ForNamespace("one")
+	ssiOne := r.ForNamespace("one")
 	ssiOneA := ssiOne.IndicatorPoint("a")
 	ssiOneB := ssiOne.IndicatorPointWithValue("b", 10)
-	ssiTwo := stayset.ForNamespace("two")
+	ssiTwo := r.ForNamespace("two")
 	ssiTwoA := ssiTwo.IndicatorPoint("a")
 	points := []*stayset.IndicatorPoint{ssiOneA, ssiOneB, ssiTwoA}
 	pointQueues := [3][]stayset.Indication{}
@@ -59,19 +59,20 @@ func generateIndicators() [3]int {
 // with the same ID.
 func TestCreateSSI(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
+	r := stayset.New()
 
-	ssiOne := stayset.ForNamespace("one")
+	ssiOne := r.ForNamespace("one")
 	assert.NotNil(ssiOne)
 	ipOneA := ssiOne.IndicatorPoint("a")
 	assert.NotNil(ipOneA)
 
-	ssiTwo := stayset.ForNamespace("two")
+	ssiTwo := r.ForNamespace("two")
 	assert.NotNil(ssiTwo)
 	assert.Different(ssiOne, ssiTwo)
 	ipTwoA := ssiTwo.IndicatorPoint("a")
 	assert.Different(ipOneA, ipTwoA)
 
-	ssiReuse := stayset.ForNamespace("one")
+	ssiReuse := r.ForNamespace("one")
 	assert.NotNil(ssiReuse)
 	assert.Different(ssiReuse, ssiTwo)
 	assert.Equal(ssiOne, ssiReuse)
@@ -80,13 +81,11 @@ func TestCreateSSI(t *testing.T) {
 // TestIndicators runs a number of stay-set indications.
 func TestIndicators(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
-
-	stayset.Reset()
-
-	quantities := generateIndicators()
+	r := stayset.New()
+	quantities := generateIndicators(r)
 
 	// Only for one indicator.
-	ipv := stayset.ForNamespace("one").IndicatorPoint("a").Value()
+	ipv := r.ForNamespace("one").IndicatorPoint("a").Value()
 	assert.Equal(ipv.Namespace, "one")
 	assert.Equal(ipv.ID, "a")
 	assert.Range(ipv.Quantity, 0, quantities[0])
@@ -95,7 +94,7 @@ func TestIndicators(t *testing.T) {
 	assert.Logf("%v", ipv)
 
 	// Only for one indicator with pre-set value.
-	ipv = stayset.ForNamespace("one").IndicatorPoint("b").Value()
+	ipv = r.ForNamespace("one").IndicatorPoint("b").Value()
 	assert.Equal(ipv.Namespace, "one")
 	assert.Equal(ipv.ID, "b")
 	assert.Range(ipv.Quantity, 0, quantities[1])
@@ -104,7 +103,7 @@ func TestIndicators(t *testing.T) {
 	assert.Logf("%v", ipv)
 
 	// Now for all indicators of one namespace.
-	ipvs := stayset.ForNamespace("one").Values()
+	ipvs := r.ForNamespace("one").Values()
 
 	assert.Length(ipvs, 2)
 
@@ -114,7 +113,7 @@ func TestIndicators(t *testing.T) {
 	}
 
 	// Now for all indicators points.
-	ipvs = stayset.Values()
+	ipvs = r.Values()
 
 	assert.Length(ipvs, 3)
 
@@ -127,17 +126,16 @@ func TestIndicators(t *testing.T) {
 // TestReset checks the resetting of all watches.
 func TestReset(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
-
-	stayset.Reset()
-	_ = generateIndicators()
+	r := stayset.New()
+	_ = generateIndicators(r)
 
 	// Check length.
-	ipvs := stayset.Values()
+	ipvs := r.Values()
 	assert.Length(ipvs, 3)
 
 	// Reset and check length.
-	stayset.Reset()
-	ipvs = stayset.Values()
+	r.Reset()
+	ipvs = r.Values()
 	assert.Length(ipvs, 0)
 }
 
