@@ -8,6 +8,7 @@
 package stayset_test // import "tideland.dev/go/trace/stayset"
 
 import (
+	"context"
 	"testing"
 
 	"tideland.dev/go/audit/asserts"
@@ -137,6 +138,20 @@ func TestReset(t *testing.T) {
 	r.Reset()
 	ipvs = r.Values()
 	assert.Length(ipvs, 0)
+}
+
+// TestContext tests the transport of a Crumb inside a Context.
+func TestContext(t *testing.T) {
+	assert := asserts.NewTesting(t, asserts.FailStop)
+	rIn := stayset.New()
+	ctxIn := context.Background()
+	ctxOut := stayset.NewContext(ctxIn, rIn)
+	rOut, ok := stayset.FromContext(ctxOut)
+
+	assert.OK(ok)
+	assert.Different(ctxIn, ctxOut)
+	assert.Equal(rIn, rOut)
+	assert.NotNil(rOut)
 }
 
 // EOF

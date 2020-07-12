@@ -37,12 +37,13 @@ func startWebAsserter(assert *asserts.Asserts) *environments.WebAsserter {
 // TestWebValues tests retrieving the values via web handler.
 func TestWebValues(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
+	r := stopwatch.New()
 	wa := startWebAsserter(assert)
 	defer wa.Close()
 
-	generateMeasurings()
+	generateMeasurings(r)
 
-	wa.Handle("/stopwatch/", stopwatch.NewHandler())
+	wa.Handle("/stopwatch/", stopwatch.NewHandler(r))
 
 	wreq := wa.CreateRequest(http.MethodGet, "/stopwatch/")
 	wresp := wreq.Do()
@@ -57,12 +58,13 @@ func TestWebValues(t *testing.T) {
 // TestWebReset tests resetting the values via web handler.
 func TestWebReset(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
+	r := stopwatch.New()
 	wa := startWebAsserter(assert)
 	defer wa.Close()
 
-	generateMeasurings()
+	generateMeasurings(r)
 
-	wa.Handle("/stopwatch/", stopwatch.NewHandler())
+	wa.Handle("/stopwatch/", stopwatch.NewHandler(r))
 
 	wreq := wa.CreateRequest(http.MethodDelete, "/stopwatch/")
 	wresp := wreq.Do()
@@ -74,10 +76,11 @@ func TestWebReset(t *testing.T) {
 // TestWebIllegal tests the handler with an illegal HTTP method.
 func TestWebIllegal(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
+	r := stopwatch.New()
 	wa := startWebAsserter(assert)
 	defer wa.Close()
 
-	wa.Handle("/stopwatch/", stopwatch.NewHandler())
+	wa.Handle("/stopwatch/", stopwatch.NewHandler(r))
 
 	wreq := wa.CreateRequest(http.MethodPost, "/stopwatch/")
 	wresp := wreq.Do()

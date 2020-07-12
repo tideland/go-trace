@@ -194,7 +194,7 @@ func New() *Registry {
 	return r
 }
 
-// ForNamespace returns an instance of a SSI with the given namespace.
+// ForNamespace creates an instance of a SSI with the given namespace.
 // In case that namespace is already in use that SSI will be returned.
 func (r *Registry) ForNamespace(namespace string) *SSI {
 	r.mu.RLock()

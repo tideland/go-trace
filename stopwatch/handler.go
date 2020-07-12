@@ -21,12 +21,16 @@ import (
 //--------------------
 
 // Handler implements the http.Handler.
-type Handler struct{}
+type Handler struct {
+	r *Registry
+}
 
 // NewHandler returns an instance of a web handler for the
 // stopwatch.
-func NewHandler() Handler {
-	return Handler{}
+func NewHandler(r *Registry) Handler {
+	return Handler{
+		r: r,
+	}
 }
 
 // ServeHTTP implements the handling function.
@@ -34,7 +38,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		// Retrieve all metering point values.
-		mpvs := Values()
+		mpvs := h.r.Values()
 		enc := json.NewEncoder(w)
 		w.Header().Set("Content-Type", "application/json")
 		err := enc.Encode(mpvs)
@@ -45,7 +49,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	case http.MethodDelete:
 		// Reset all metering point values.
-		Reset()
+		h.r.Reset()
 		enc := json.NewEncoder(w)
 		w.Header().Set("Content-Type", "application/json")
 		err := enc.Encode("metering point values resetted")

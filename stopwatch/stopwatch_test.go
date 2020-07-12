@@ -21,12 +21,12 @@ import (
 )
 
 // generateMeasurings creates some measurings for the tests.
-func generateMeasurings() {
+func generateMeasurings(r *stopwatch.Registry) {
 	gen := generators.New(generators.FixedRand())
-	swOne := stopwatch.ForNamespace("one")
+	swOne := r.ForNamespace("one")
 	mpOneA := swOne.MeteringPoint("a")
 	mpOneB := swOne.MeteringPoint("b")
-	swTwo := stopwatch.ForNamespace("two")
+	swTwo := r.ForNamespace("two")
 	mpTwoA := swTwo.MeteringPoint("a")
 
 	for i := 0; i < 777; i++ {
@@ -50,19 +50,20 @@ func generateMeasurings() {
 // with the same ID.
 func TestCreateStopwatch(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
+	r := stopwatch.New()
 
-	swOne := stopwatch.ForNamespace("one")
+	swOne := r.ForNamespace("one")
 	assert.NotNil(swOne)
 	mpOneA := swOne.MeteringPoint("a")
 	assert.NotNil(mpOneA)
 
-	swTwo := stopwatch.ForNamespace("two")
+	swTwo := r.ForNamespace("two")
 	assert.NotNil(swTwo)
 	assert.Different(swOne, swTwo)
 	mpTwoA := swTwo.MeteringPoint("a")
 	assert.Different(mpOneA, mpTwoA)
 
-	swReuse := stopwatch.ForNamespace("one")
+	swReuse := r.ForNamespace("one")
 	assert.NotNil(swReuse)
 	assert.Different(swReuse, swTwo)
 	assert.Equal(swOne, swReuse)
@@ -71,13 +72,12 @@ func TestCreateStopwatch(t *testing.T) {
 // TestMeasurings runs a number of measurings.
 func TestMeasurings(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
+	r := stopwatch.New()
 
-	stopwatch.Reset()
-
-	generateMeasurings()
+	generateMeasurings(r)
 
 	// Only for one metering point.
-	mpv := stopwatch.ForNamespace("one").MeteringPoint("a").Value()
+	mpv := r.ForNamespace("one").MeteringPoint("a").Value()
 	assert.Equal(mpv.Namespace, "one")
 	assert.Equal(mpv.ID, "a")
 	assert.Equal(mpv.Quantity, 777)
@@ -85,7 +85,7 @@ func TestMeasurings(t *testing.T) {
 	assert.Logf("%v", mpv)
 
 	// Now for all metering points of one namespace.
-	mpvs := stopwatch.ForNamespace("one").Values()
+	mpvs := r.ForNamespace("one").Values()
 	assert.Length(mpvs, 2)
 	for _, mpv := range mpvs {
 		assert.Equal(mpv.Namespace, "one")
@@ -95,7 +95,7 @@ func TestMeasurings(t *testing.T) {
 	}
 
 	// Now for all metering points.
-	mpvs = stopwatch.Values()
+	mpvs = r.Values()
 	assert.Length(mpvs, 3)
 	for _, mpv := range mpvs {
 		assert.True(mpv.Namespace == "one" || mpv.Namespace == "two")
@@ -108,17 +108,17 @@ func TestMeasurings(t *testing.T) {
 // TestReset checks the resetting of all watches.
 func TestReset(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
+	r := stopwatch.New()
 
-	stopwatch.Reset()
-	generateMeasurings()
+	generateMeasurings(r)
 
 	// Check length.
-	mpvs := stopwatch.Values()
+	mpvs := r.Values()
 	assert.Length(mpvs, 3)
 
 	// Reset and check length.
-	stopwatch.Reset()
-	mpvs = stopwatch.Values()
+	r.Reset()
+	mpvs = r.Values()
 	assert.Length(mpvs, 0)
 }
 
