@@ -79,7 +79,7 @@ func TestCreateSSI(t *testing.T) {
 	assert.Equal(ssiOne, ssiReuse)
 }
 
-// TestIndicators runs a number of stay-set indications.
+// TestIndicators runs a number of SSIs.
 func TestIndicators(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
 	r := stayset.New()
@@ -124,7 +124,7 @@ func TestIndicators(t *testing.T) {
 	}
 }
 
-// TestReset checks the resetting of all watches.
+// TestReset checks the resetting of all SSIs.
 func TestReset(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
 	r := stayset.New()
@@ -140,7 +140,7 @@ func TestReset(t *testing.T) {
 	assert.Length(ipvs, 0)
 }
 
-// TestContext tests the transport of a Crumb inside a Context.
+// TestContext tests the transport of a SSI inside a Context.
 func TestContext(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
 	rIn := stayset.New()

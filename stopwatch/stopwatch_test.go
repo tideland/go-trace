@@ -12,6 +12,7 @@ package stopwatch_test // import "tideland.dev/go/trace/stopwatch"
 //--------------------
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -120,6 +121,20 @@ func TestReset(t *testing.T) {
 	r.Reset()
 	mpvs = r.Values()
 	assert.Length(mpvs, 0)
+}
+
+// TestContext tests the transport of a Stopwatch inside a Context.
+func TestContext(t *testing.T) {
+	assert := asserts.NewTesting(t, asserts.FailStop)
+	rIn := stopwatch.New()
+	ctxIn := context.Background()
+	ctxOut := stopwatch.NewContext(ctxIn, rIn)
+	rOut, ok := stopwatch.FromContext(ctxOut)
+
+	assert.OK(ok)
+	assert.Different(ctxIn, ctxOut)
+	assert.Equal(rIn, rOut)
+	assert.NotNil(rOut)
 }
 
 // EOF
