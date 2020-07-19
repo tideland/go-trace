@@ -43,11 +43,14 @@ type Location struct {
 // Code returns returns a location based code.
 func (l Location) Code(prefix string) string {
 	pparts := strings.Split(l.Package, "/")
+
 	for _, ppart := range pparts {
 		prefix += ppart[0:1]
 	}
+
 	prefix += l.File[0:1]
 	prefix += strconv.Itoa(l.Line)
+
 	return strings.ToUpper(prefix)
 }
 

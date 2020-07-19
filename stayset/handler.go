@@ -1,11 +1,11 @@
-// Tideland Go Trace - Stopwatch
+// Tideland Go Trace - Stay-set Indicator
 //
 // Copyright (C) 2020 Frank Mueller / Tideland / Oldenburg / Germany
 //
 // All rights reserved. Use of this source code is governed
 // by the new BSD license.
 
-package stopwatch // import "tideland.dev/go/trace/stopwatch"
+package stayset // import "tideland.dev/go/trace/stayset"
 
 //--------------------
 // IMPORT
@@ -38,10 +38,10 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		// Retrieve all metering point values.
-		mpvs := h.r.Values()
+		ipvs := h.r.Values()
 		enc := json.NewEncoder(w)
 		w.Header().Set("Content-Type", "application/json")
-		err := enc.Encode(mpvs)
+		err := enc.Encode(ipvs)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
@@ -52,7 +52,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.r.Reset()
 		enc := json.NewEncoder(w)
 		w.Header().Set("Content-Type", "application/json")
-		err := enc.Encode("metering point values resetted")
+		err := enc.Encode("indicator point values resetted")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}

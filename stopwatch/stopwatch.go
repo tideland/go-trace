@@ -151,102 +151,15 @@ func (mp *MeteringPoint) clearQueue() {
 }
 
 //--------------------
-// STOPWATCHES
-//--------------------
-
-// stopwatches is the register type for all stopwatches.
-type stopwatches struct {
-	mu      sync.RWMutex
-	watches map[string]*Stopwatch
-}
-
-// once ensures only one initialization.
-var once sync.Once
-
-// registry contains all stopwatches by ID.
-var registry *stopwatches
-
-// initializedRegistry returns the registry for the stopwatches.
-func initializedRegistry() *stopwatches {
-	once.Do(func() {
-		if registry == nil {
-			registry = &stopwatches{
-				watches: make(map[string]*Stopwatch),
-			}
-		}
-	})
-	return registry
-}
-
-// load retrieves an already registered stopwatch or signals if it
-// doesn't exist.
-func (sws *stopwatches) load(namespace string) (*Stopwatch, bool) {
-	sws.mu.RLock()
-	defer sws.mu.RUnlock()
-	sw, ok := sws.watches[namespace]
-	return sw, ok
-}
-
-// store checks if the namespace already exists and possibly returns it.
-// Otherwise it registers the given one and returns that.
-func (sws *stopwatches) store(namespace string, sw *Stopwatch) *Stopwatch {
-	sws.mu.Lock()
-	defer sws.mu.Unlock()
-	swsSW, ok := sws.watches[namespace]
-	if ok {
-		return swsSW
-	}
-	sws.watches[namespace] = sw
-	return sw
-}
-
-// Values returns the values of all metering points.
-func Values() MeteringPointValues {
-	mpvs := MeteringPointValues{}
-	reg := initializedRegistry()
-	reg.mu.RLock()
-	defer reg.mu.RUnlock()
-	for _, stopwatch := range reg.watches {
-		mpvs = append(mpvs, stopwatch.Values()...)
-	}
-	return mpvs
-}
-
-// Reset clears all stopwatches.
-func Reset() {
-	reg := initializedRegistry()
-	reg.mu.RLock()
-	defer reg.mu.RUnlock()
-	// Simply start with a new registry, rest is done by GC.
-	reg.watches = make(map[string]*Stopwatch)
-}
-
-//--------------------
 // STOPWATCH
 //--------------------
 
-// Stopwatch allows to measure the execution time at multiple reading
+// Stopwatch allows to measure the execution time at multiple reading points
 // in one namespace.
 type Stopwatch struct {
 	mu             sync.RWMutex
 	namespace      string
 	meteringPoints map[string]*MeteringPoint
-}
-
-// ForNamespace returns an instance of a stopwatch with the given namespace.
-// In case that namespace is already in use that stopwatch will be returned.
-func ForNamespace(namespace string) *Stopwatch {
-	// Check for alreadoy registered stopwatch.
-	sw, ok := initializedRegistry().load(namespace)
-	if ok {
-		return sw
-	}
-	// Create new stopwatch and register it.
-	sw = &Stopwatch{
-		namespace:      namespace,
-		meteringPoints: make(map[string]*MeteringPoint),
-	}
-	return initializedRegistry().store(namespace, sw)
 }
 
 // MeteringPoint returns a new or already existing metering point
@@ -280,6 +193,64 @@ func (sw *Stopwatch) Values() MeteringPointValues {
 		mpvs = append(mpvs, mp.Value())
 	}
 	return mpvs
+}
+
+//--------------------
+// REGISTRY
+//--------------------
+
+// Registry is the register type for all Stopwatches.
+type Registry struct {
+	mu      sync.RWMutex
+	watches map[string]*Stopwatch
+}
+
+// New returns a registry for Stopwatches.
+func New() *Registry {
+	r := &Registry{
+		watches: make(map[string]*Stopwatch),
+	}
+	return r
+}
+
+// ForNamespace creates an instance of a Stopwatch with the given namespace.
+// In case that namespace is already in use that Stopwatch will be returned.
+func (r *Registry) ForNamespace(namespace string) *Stopwatch {
+	r.mu.RLock()
+	watch, ok := r.watches[namespace]
+	r.mu.RUnlock()
+	// Check if found.
+	if ok {
+		return watch
+	}
+	// Not found, create Stopwatch.
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	watch = &Stopwatch{
+		namespace:      namespace,
+		meteringPoints: make(map[string]*MeteringPoint),
+	}
+	r.watches[namespace] = watch
+	return watch
+}
+
+// Values returns the values of all metering points.
+func (r *Registry) Values() MeteringPointValues {
+	mpvs := MeteringPointValues{}
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	for _, stopwatch := range r.watches {
+		mpvs = append(mpvs, stopwatch.Values()...)
+	}
+	return mpvs
+}
+
+// Reset clears all stopwatches.
+func (r *Registry) Reset() {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	// Simply start with a new registry, rest is done by GC.
+	r.watches = make(map[string]*Stopwatch)
 }
 
 // EOF
