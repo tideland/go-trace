@@ -1,4 +1,4 @@
-// Tideland Go Trace - Fail
+// Tideland Go Trace - Failure
 //
 // Copyright (C) 2020 Frank Mueller / Tideland / Oldenburg / Germany
 //
