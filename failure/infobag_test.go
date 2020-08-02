@@ -60,7 +60,7 @@ func TestInfoBagString(t *testing.T) {
 			"y", 42,
 		),
 	)
-	s := `{"a": 1337, "b": "foo", "c": {"x": false, "y": 42}}`
+	s := `[{"a": 1337}, {"b": "foo"}, {"c": [{"x": false}, {"y": 42}]}]`
 
 	assert.Equal(ib.String(), s)
 }

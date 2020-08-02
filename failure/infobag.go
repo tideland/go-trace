@@ -31,9 +31,9 @@ type info struct {
 func (i info) String() string {
 	switch i.value.(type) {
 	case string:
-		return fmt.Sprintf("%q: %q", i.key, i.value)
+		return fmt.Sprintf("{%q: %q}", i.key, i.value)
 	default:
-		return fmt.Sprintf("%q: %v", i.key, i.value)
+		return fmt.Sprintf("{%q: %v}", i.key, i.value)
 	}
 }
 
@@ -94,7 +94,7 @@ func (ib InfoBag) String() string {
 		kvs[i] = info.String()
 	}
 	kvss := strings.Join(kvs, ", ")
-	return "{" + kvss + "}"
+	return "[" + kvss + "]"
 }
 
 // EOF
