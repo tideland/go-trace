@@ -48,4 +48,21 @@ func TestNewInfoBag(t *testing.T) {
 	})
 }
 
+// TestInfoBagString verifies the string output of
+// InfoBags.
+func TestInfoBagString(t *testing.T) {
+	assert := asserts.NewTesting(t, asserts.FailStop)
+	ib := failure.NewInfoBag(
+		"a", 1337,
+		"b", "foo",
+		"c", failure.NewInfoBag(
+			"x", false,
+			"y", 42,
+		),
+	)
+	s := `{"a": 1337, "b": "foo", "c": {"x": false, "y": 42}}`
+
+	assert.Equal(ib.String(), s)
+}
+
 // EOF

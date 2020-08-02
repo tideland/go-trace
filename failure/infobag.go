@@ -93,7 +93,7 @@ func (ib InfoBag) String() string {
 	for i, info := range ib.infos {
 		kvs[i] = info.String()
 	}
-	kvss := strings.Join(kvs, ",")
+	kvss := strings.Join(kvs, ", ")
 	return "{" + kvss + "}"
 }
 
