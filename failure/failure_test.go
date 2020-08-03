@@ -62,7 +62,7 @@ func TestValidation(t *testing.T) {
 	assert.False(failure.IsValid(err))
 
 	hereID, lerr = failure.Location(err)
-	assert.Equal(lerr.Error(), "[ETGTFF156] passed error has invalid type: ouch")
+	assert.Equal(lerr.Error(), "[ETGTFF164] passed error has invalid type: ouch")
 	assert.Empty(hereID)
 }
 

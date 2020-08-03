@@ -25,6 +25,7 @@ import (
 // failure encapsulates an error.
 type failure struct {
 	err      error
+	infos    []*InfoBag
 	msg      string
 	hereCode string
 	hereID   string
@@ -32,8 +33,15 @@ type failure struct {
 
 // newFailure creates an initialized failure.
 func newFailure(err error, msg string, args ...interface{}) *failure {
+	var infos []*InfoBag
+	for _, arg := range args {
+		if info, ok := arg.(*InfoBag); ok {
+			infos = append(infos, info)
+		}
+	}
 	return &failure{
 		err:      err,
+		infos:    infos,
 		msg:      fmt.Sprintf(msg, args...),
 		hereCode: location.At(2).Code("E"),
 		hereID:   location.At(2).ID,
@@ -179,18 +187,41 @@ func All(err error) []error {
 
 // DoAll iterates the passed function over all stacked
 // or collected errors or simply the one that's passed.
-func DoAll(err error, f func(error)) {
+func DoAll(err error, errF func(error)) {
 	switch terr := err.(type) {
 	case *failure:
 		for _, serr := range Stack(err) {
-			f(serr)
+			errF(serr)
 		}
 	case *errorCollection:
 		for _, aerr := range All(err) {
-			f(aerr)
+			errF(aerr)
 		}
 	default:
-		f(terr)
+		errF(terr)
+	}
+}
+
+// AllInfoBags returns all InfoBags an error created by this
+// package potentially contains.
+func AllInfoBags(err error) []*InfoBag {
+	var infos []*InfoBag
+	if IsValid(err) {
+		f := err.(*failure)
+		infos = make([]*InfoBag, len(f.infos))
+		copy(infos, f.infos)
+	}
+	return infos
+}
+
+// DoAllInfoBags processes all InfoBags an error created by this
+// package potentially contains.
+func DoAllInfoBags(err error, ibF func(*InfoBag)) {
+	if IsValid(err) {
+		f := err.(*failure)
+		for _, info := range f.infos {
+			ibF(info)
+		}
 	}
 }
 
