@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"strings"
 
+	"tideland.dev/go/trace/infobag"
 	"tideland.dev/go/trace/location"
 )
 
@@ -25,7 +26,7 @@ import (
 // failure encapsulates an error.
 type failure struct {
 	err      error
-	infos    []*InfoBag
+	infos    []*infobag.InfoBag
 	msg      string
 	hereCode string
 	hereID   string
@@ -33,9 +34,9 @@ type failure struct {
 
 // newFailure creates an initialized failure.
 func newFailure(err error, msg string, args ...interface{}) *failure {
-	var infos []*InfoBag
+	var infos []*infobag.InfoBag
 	for _, arg := range args {
-		if info, ok := arg.(*InfoBag); ok {
+		if info, ok := arg.(*infobag.InfoBag); ok {
 			infos = append(infos, info)
 		}
 	}
@@ -204,11 +205,11 @@ func DoAll(err error, errF func(error)) {
 
 // AllInfoBags returns all InfoBags an error created by this
 // package potentially contains.
-func AllInfoBags(err error) []*InfoBag {
-	var infos []*InfoBag
+func AllInfoBags(err error) []*infobag.InfoBag {
+	var infos []*infobag.InfoBag
 	if IsValid(err) {
 		f := err.(*failure)
-		infos = make([]*InfoBag, len(f.infos))
+		infos = make([]*infobag.InfoBag, len(f.infos))
 		copy(infos, f.infos)
 	}
 	return infos
@@ -216,7 +217,7 @@ func AllInfoBags(err error) []*InfoBag {
 
 // DoAllInfoBags processes all InfoBags an error created by this
 // package potentially contains.
-func DoAllInfoBags(err error, ibF func(*InfoBag)) {
+func DoAllInfoBags(err error, ibF func(*infobag.InfoBag)) {
 	if IsValid(err) {
 		f := err.(*failure)
 		for _, info := range f.infos {

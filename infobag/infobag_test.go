@@ -1,11 +1,11 @@
-// Tideland Go Trace - Failure - Unit Tests
+// Tideland Go Trace - InfoBag - Unit Tests
 //
 // Copyright (C) 2020 Frank Mueller / Tideland / Oldenburg / Germany
 //
 // All rights reserved. Use of this source code is governed
 // by the new BSD license.
 
-package failure_test
+package infobag_test // import "tideland.dev/go/trace/infobag"
 
 //--------------------
 // IMPORTS
@@ -15,16 +15,16 @@ import (
 	"testing"
 
 	"tideland.dev/go/audit/asserts"
-	"tideland.dev/go/trace/failure"
+	"tideland.dev/go/trace/infobag"
 )
 
 //--------------------
 // TESTS
 //--------------------
 
-// TestNewInfoBag verifies the correct instantiation of a
+// TestNew verifies the correct instantiation of a
 // an InfoBag.
-func TestNewInfoBag(t *testing.T) {
+func TestNew(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
 	values := map[string]interface{}{
 		"a": "foo",
@@ -33,7 +33,7 @@ func TestNewInfoBag(t *testing.T) {
 		"d": false,
 		"e": true,
 	}
-	ib := failure.NewInfoBag(
+	ib := infobag.New(
 		"a", values["a"],
 		"b", values["b"],
 		"c", values["c"],
@@ -52,10 +52,10 @@ func TestNewInfoBag(t *testing.T) {
 // InfoBags.
 func TestInfoBagString(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
-	ib := failure.NewInfoBag(
+	ib := infobag.New(
 		"a", 1337,
 		"b", "foo",
-		"c", failure.NewInfoBag(
+		"c", infobag.New(
 			"x", false,
 			"y", 42,
 		),
