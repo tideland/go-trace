@@ -12,30 +12,9 @@ package infobag // import "tideland.dev/go/trace/infobag"
 //--------------------
 
 import (
+	"encoding/json"
 	"fmt"
-	"strings"
 )
-
-//--------------------
-// INFO
-//--------------------
-
-// Info contains one information of the InfoBag. It consists out
-// of a key and any value, which could be an InfoBag too.
-type Info struct {
-	Key   string
-	Value interface{}
-}
-
-// String implements the fmt.Stringer interface.
-func (i Info) String() string {
-	switch i.Value.(type) {
-	case string:
-		return fmt.Sprintf("{%q: %q}", i.Key, i.Value)
-	default:
-		return fmt.Sprintf("{%q: %v}", i.Key, i.Value)
-	}
-}
 
 //--------------------
 // INFO BAG
@@ -44,7 +23,7 @@ func (i Info) String() string {
 // InfoBag contains a number of useful extra informations for
 // failures.
 type InfoBag struct {
-	infos []Info
+	infos map[string]interface{}
 }
 
 // New creates an InfoBag with a number of keys and values.
@@ -52,28 +31,43 @@ type InfoBag struct {
 // So keys are taken as or converted into strings. In case the final
 // item would be a key its value will be set to true.
 func New(kvs ...interface{}) *InfoBag {
-	ib := &InfoBag{}
-	i := Info{}
+	ib := &InfoBag{
+		infos: make(map[string]interface{}),
+	}
+	key := ""
 	for _, kv := range kvs {
 		// Check for new key.
-		if i.Key == "" {
-			i.Key = fmt.Sprintf("%s", kv)
+		if key == "" {
+			key = fmt.Sprintf("%s", kv)
 			continue
 		}
-		// Now a value. Add the info to the bag.
-		i.Value = kv
-		ib.infos = append(ib.infos, i)
-		i = Info{}
+		// Now the value.
+		value, ok := ib.infos[key]
+		if !ok {
+			// It's a new value.
+			ib.infos[key] = kv
+			key = ""
+			continue
+		}
+		// Key already has one or more values.
+		if values, ok := value.([]interface{}); ok {
+			// Append to already known.
+			ib.infos[key] = append(values, kv)
+			key = ""
+			continue
+		}
+		// So far only one value.
+		ib.infos[key] = []interface{}{value, kv}
+		key = ""
 	}
 	// Check if loop ended after key.
-	if i.Key != "" {
-		i.Value = true
-		ib.infos = append(ib.infos, i)
+	if key != "" {
+		ib.infos[key] = true
 	}
 	return ib
 }
 
-// Len returns the number of informations inside of
+// Len returns the number of keys inside of
 // the InfoBag.
 func (ib InfoBag) Len() int {
 	return len(ib.infos)
@@ -82,19 +76,24 @@ func (ib InfoBag) Len() int {
 // Do iterates over the informations of the InfoBag and
 // calls the given function for each key and value.
 func (ib InfoBag) Do(f func(key string, valiue interface{})) {
-	for _, i := range ib.infos {
-		f(i.Key, i.Value)
+	for k, v := range ib.infos {
+		f(k, v)
 	}
+}
+
+// MarshalJSON implements the json.Marshaller interface.
+// Needed for handling of nested InfoBag instances.
+func (ib InfoBag) MarshalJSON() ([]byte, error) {
+	return json.Marshal(ib.infos)
 }
 
 // String implements the fmt.Stringer interface.
 func (ib InfoBag) String() string {
-	kvs := make([]string, len(ib.infos))
-	for i, info := range ib.infos {
-		kvs[i] = info.String()
+	bs, err := json.Marshal(ib.infos)
+	if err != nil {
+		panic("cannot stringify infobag: " + err.Error())
 	}
-	kvss := strings.Join(kvs, ", ")
-	return "[" + kvss + "]"
+	return string(bs)
 }
 
 // EOF

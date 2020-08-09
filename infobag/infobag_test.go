@@ -59,9 +59,11 @@ func TestInfoBagString(t *testing.T) {
 			"x", false,
 			"y", 42,
 		),
+		"b", "bar",
 	)
-	s := `[{"a": 1337}, {"b": "foo"}, {"c": [{"x": false}, {"y": 42}]}]`
+	s := `{"a":1337,"b":["foo","bar"],"c":{"x":false,"y":42}}`
 
+	// TODO Better test, map order may change.
 	assert.Equal(ib.String(), s)
 }
 
