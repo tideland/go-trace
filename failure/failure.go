@@ -26,24 +26,19 @@ import (
 // failure encapsulates an error.
 type failure struct {
 	err      error
-	infos    []*infobag.InfoBag
+	infos    *infobag.InfoBag
 	msg      string
 	hereCode string
 	hereID   string
 }
 
 // newFailure creates an initialized failure.
-func newFailure(err error, msg string, args ...interface{}) *failure {
-	var infos []*infobag.InfoBag
-	for _, arg := range args {
-		if info, ok := arg.(*infobag.InfoBag); ok {
-			infos = append(infos, info)
-		}
-	}
+func newFailure(err error, msg string, kvs ...interface{}) *failure {
+	infos := infobag.New(kvs...)
 	return &failure{
 		err:      err,
 		infos:    infos,
-		msg:      fmt.Sprintf(msg, args...),
+		msg:      msg + " " + infos.String(),
 		hereCode: location.At(2).Code("E"),
 		hereID:   location.At(2).ID,
 	}
@@ -203,26 +198,22 @@ func DoAll(err error, errF func(error)) {
 	}
 }
 
-// AllInfoBags returns all InfoBags an error created by this
+// InfoBag returns the InfoBag an error created by this
 // package potentially contains.
-func AllInfoBags(err error) []*infobag.InfoBag {
-	var infos []*infobag.InfoBag
+func InfoBag(err error) *infobag.InfoBag {
 	if IsValid(err) {
 		f := err.(*failure)
-		infos = make([]*infobag.InfoBag, len(f.infos))
-		copy(infos, f.infos)
+		return f.infos
 	}
-	return infos
+	return nil
 }
 
-// DoAllInfoBags processes all InfoBags an error created by this
-// package potentially contains.
-func DoAllInfoBags(err error, ibF func(*infobag.InfoBag)) {
+// DoInfoBag processes the InfoBag of the passed error if
+// it is valid.
+func DoInfoBag(err error, ibf func(key, value string)) {
 	if IsValid(err) {
 		f := err.(*failure)
-		for _, info := range f.infos {
-			ibF(info)
-		}
+		f.infos.Do(ibf)
 	}
 }
 
