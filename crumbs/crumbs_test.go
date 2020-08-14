@@ -66,14 +66,14 @@ func TestDefaultWriter(t *testing.T) {
 
 		assert.NoError(c.L(0).Info("info test", "a", 1, "a", 2))
 	})
-	assert.Contains(`"kind":"info","message":"info test","infos":[{"key":"a","value":1},{"key":"a","value":2}]`, cout.String())
+	assert.Contains(`"kind":"info","message":"info test","infos":{"a":[1,2]}`, cout.String())
 
 	cout = capture.Stdout(func() {
 		c := crumbs.New()
 
 		assert.NoError(c.L(0).Error(errors.New("test"), "error test", "done"))
 	})
-	assert.Contains(`"kind":"error","message":"error test","infos":[{"key":"error","value":"test"},{"key":"done","value":true}]`, cout.String())
+	assert.Contains(`"kind":"error","message":"error test","infos":{"done":true,"error":"test"}`, cout.String())
 }
 
 // TestOwnWriter tests a Crumb using the WriterGrainTray
@@ -85,10 +85,10 @@ func TestOwnWriter(t *testing.T) {
 	c := crumbs.New(crumbs.Tray(gt))
 
 	assert.NoError(c.L(0).Info("info test", "a", 1, "a", 2))
-	assert.Contains(`"kind":"info","message":"info test","infos":[{"key":"a","value":1},{"key":"a","value":2}]`, buf.String())
+	assert.Contains(`"kind":"info","message":"info test","infos":{"a":[1,2]}`, buf.String())
 
 	assert.NoError(c.L(0).Error(errors.New("test"), "error test", "done"))
-	assert.Contains(`"kind":"error","message":"error test","infos":[{"key":"error","value":"test"},{"key":"done","value":true}]`, buf.String())
+	assert.Contains(`"kind":"error","message":"error test","infos":{"done":true,"error":"test"}`, buf.String())
 }
 
 // TestLoggerWriter tests a Crumb using the LoggerGrainTray.
@@ -100,10 +100,10 @@ func TestLoggerWriter(t *testing.T) {
 	c := crumbs.New(crumbs.Tray(gt))
 
 	assert.NoError(c.L(0).Info("info test", "a", 1, "a", 2))
-	assert.Contains(`"kind":"info","message":"info test","infos":[{"key":"a","value":1},{"key":"a","value":2}]`, buf.String())
+	assert.Contains(`"kind":"info","message":"info test","infos":{"a":[1,2]}`, buf.String())
 
 	assert.NoError(c.L(0).Error(errors.New("test"), "error test", "done"))
-	assert.Contains(`"kind":"error","message":"error test","infos":[{"key":"error","value":"test"},{"key":"done","value":true}]`, buf.String())
+	assert.Contains(`"kind":"error","message":"error test","infos":{"done":true,"error":"test"}`, buf.String())
 }
 
 // TestContext tests the transport of a Crumb inside a Context.

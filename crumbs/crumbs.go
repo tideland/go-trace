@@ -52,9 +52,9 @@ func (c *Crumbs) L(level byte) CrumbWriter {
 // Crumble is intended to be used with defer. When called the given
 // function f will be called. In case of an error an error crumb will
 // be written with the given message and values.
-func Crumble(cw CrumbWriter, f func() error, msg string, infos ...interface{}) {
+func Crumble(cw CrumbWriter, f func() error, msg string, kvs ...interface{}) {
 	if err := f(); err != nil {
-		if cwErr := cw.Error(err, msg, infos...); cwErr != nil {
+		if cwErr := cw.Error(err, msg, kvs...); cwErr != nil {
 			panic("cannot crumble error:" + cwErr.Error())
 		}
 	}
