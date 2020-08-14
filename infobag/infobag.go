@@ -74,10 +74,19 @@ func (ib InfoBag) Len() int {
 }
 
 // Do iterates over the informations of the InfoBag and
-// calls the given function for each key and value.
-func (ib InfoBag) Do(f func(key string, valiue interface{})) {
+// calls the given function for each key and value. The
+// value will be passed as string so that in case of
+// reference types they won't be modifyable.
+func (ib InfoBag) Do(f func(key, value string)) {
 	for k, v := range ib.infos {
-		f(k, v)
+		var sv string
+		switch tv := v.(type) {
+		case fmt.Stringer:
+			sv = tv.String()
+		default:
+			sv = fmt.Sprintf("%v", v)
+		}
+		f(k, sv)
 	}
 }
 

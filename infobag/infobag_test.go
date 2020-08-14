@@ -12,6 +12,7 @@ package infobag_test // import "tideland.dev/go/trace/infobag"
 //--------------------
 
 import (
+	"fmt"
 	"testing"
 
 	"tideland.dev/go/audit/asserts"
@@ -43,8 +44,9 @@ func TestNew(t *testing.T) {
 
 	assert.Length(ib, 5)
 
-	ib.Do(func(key string, value interface{}) {
-		assert.Equal(value, values[key])
+	ib.Do(func(key, value string) {
+		wanted := fmt.Sprintf("%v", values[key])
+		assert.Equal(value, wanted)
 	})
 }
 
