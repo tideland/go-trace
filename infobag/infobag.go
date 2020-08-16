@@ -38,7 +38,7 @@ func New(kvs ...interface{}) *InfoBag {
 	for _, kv := range kvs {
 		// Check for new key.
 		if key == "" {
-			key = fmt.Sprintf("%s", kv)
+			key = fmt.Sprintf("%v", kv)
 			continue
 		}
 		// Now the value.
@@ -71,6 +71,23 @@ func New(kvs ...interface{}) *InfoBag {
 // the InfoBag.
 func (ib InfoBag) Len() int {
 	return len(ib.infos)
+}
+
+// Get returns the value of one InfoBag key as string and true
+// if it exists, otherwise an empty string and false.
+func (ib InfoBag) Get(key string) (string, bool) {
+	v, ok := ib.infos[key]
+	if !ok {
+		return "", false
+	}
+	var sv string
+	switch tv := v.(type) {
+	case fmt.Stringer:
+		sv = tv.String()
+	default:
+		sv = fmt.Sprintf("%v", v)
+	}
+	return sv, true
 }
 
 // Do iterates over the informations of the InfoBag and

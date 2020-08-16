@@ -44,6 +44,10 @@ func TestNew(t *testing.T) {
 
 	assert.Length(ib, 5)
 
+	b, ok := ib.Get("b")
+	assert.OK(ok)
+	assert.Equal(b, "12345")
+
 	ib.Do(func(key, value string) {
 		wanted := fmt.Sprintf("%v", values[key])
 		assert.Equal(value, wanted)

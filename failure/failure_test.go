@@ -27,11 +27,12 @@ import (
 func TestIsError(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
 
-	emsg := "test error %d"
-	err := failure.New(emsg, 1)
+	err := failure.New("test error", "one")
 
 	assert.True(failure.IsValid(err))
-	assert.Equal(err.Error(), "[ETGTFF31] test error 1")
+	assert.ErrorContains(err, "test error")
+	assert.ErrorContains(err, `"one":true`)
+	assert.ErrorContains(err, `"location":"(tideland.dev/go/trace/failure_test:failure_test.go:TestIsError:30)"`)
 
 	err = testError("test error 2")
 
@@ -49,8 +50,7 @@ func TestValidation(t *testing.T) {
 	assert := asserts.NewTesting(t, asserts.FailStop)
 
 	// First a valid error.
-	emsg := "valid"
-	err := failure.New(emsg)
+	err := failure.New("valid")
 	assert.True(failure.IsValid(err))
 
 	hereID, lerr := failure.Location(err)
@@ -62,7 +62,9 @@ func TestValidation(t *testing.T) {
 	assert.False(failure.IsValid(err))
 
 	hereID, lerr = failure.Location(err)
-	assert.Equal(lerr.Error(), "[ETGTFF165] passed error has invalid type: ouch")
+	assert.ErrorContains(lerr, `passed error has invalid type`)
+	assert.ErrorContains(lerr, `"annotated":"ouch"`)
+	assert.ErrorContains(lerr, `"location":"(tideland.dev/go/trace/failure:failure.go:Location:169)"`)
 	assert.Empty(hereID)
 }
 
@@ -74,7 +76,12 @@ func TestAnnotation(t *testing.T) {
 	err2 := failure.Annotate(err1, "1st annotated")
 	err3 := failure.Annotate(err2, "2nd annotated")
 
-	assert.ErrorMatch(err3, `.* 2nd annotated: .* 1st annotated: wrapped`)
+	assert.ErrorContains(err1, `wrapped`)
+	assert.ErrorContains(err2, `1st annotated`)
+	assert.ErrorContains(err2, `"annotated":"wrapped"`)
+	assert.ErrorContains(err2, `"location":"(tideland.dev/go/trace/failure_test:failure_test.go:TestAnnotation:76)"`)
+	assert.ErrorContains(err3, `2nd annotated`)
+
 	assert.Equal(failure.Annotated(err3), err2)
 	assert.Equal(failure.Annotated(err2), err1)
 	assert.Length(failure.Stack(err3), 3)
