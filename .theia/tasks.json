@@ -1,0 +1,17 @@
+{
+    "version": "0.1.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "process",
+            "command": "go builld",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$go"
+            ]
+        }
+    ]
+}

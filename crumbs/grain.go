@@ -13,8 +13,9 @@ package crumbs // import "tideland.dev/go/trace/crumbs"
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
+
+	"tideland.dev/go/trace/infobag"
 )
 
 //--------------------
@@ -51,47 +52,22 @@ func (gk GrainKind) MarshalJSON() ([]byte, error) {
 // GRAIN
 //--------------------
 
-// GrainInfo contains a pair of key and value of a Grain.
-type GrainInfo struct {
-	Key   string      `json:"key"`
-	Value interface{} `json:"value"`
-}
-
 // Grain contains all data to log.
 type Grain struct {
-	Timestamp time.Time   `json:"timestamp"`
-	Kind      GrainKind   `json:"kind"`
-	Message   string      `json:"message"`
-	Infos     []GrainInfo `json:"infos"`
+	Timestamp time.Time        `json:"timestamp"`
+	Kind      GrainKind        `json:"kind"`
+	Message   string           `json:"message"`
+	Infos     *infobag.InfoBag `json:"infos"`
 }
 
 // newGrain parses the keys and values and creates a Grain.
-func newGrain(kind GrainKind, msg string, infos ...interface{}) *Grain {
-	g := &Grain{
+func newGrain(kind GrainKind, msg string, kvs ...interface{}) *Grain {
+	return &Grain{
 		Timestamp: time.Now().UTC(),
 		Kind:      kind,
 		Message:   msg,
+		Infos:     infobag.New(kvs...),
 	}
-	key := ""
-	last := len(infos) - 1
-	for i, kv := range infos {
-		switch {
-		case i%2 == 0 && i == last:
-			g.Infos = append(g.Infos, GrainInfo{
-				Key:   fmt.Sprintf("%v", kv),
-				Value: true,
-			})
-		case i%2 == 0:
-			key = fmt.Sprintf("%v", kv)
-		default:
-			g.Infos = append(g.Infos, GrainInfo{
-				Key:   key,
-				Value: kv,
-			})
-			key = ""
-		}
-	}
-	return g
 }
 
 // String implements fmt.Stringer. This implementation

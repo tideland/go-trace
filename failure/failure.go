@@ -1,4 +1,4 @@
-// Tideland Go Trace - Fail
+// Tideland Go Trace - Failure
 //
 // Copyright (C) 2020 Frank Mueller / Tideland / Oldenburg / Germany
 //
@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"strings"
 
+	"tideland.dev/go/trace/infobag"
 	"tideland.dev/go/trace/location"
 )
 
@@ -24,19 +25,31 @@ import (
 
 // failure encapsulates an error.
 type failure struct {
-	err      error
-	msg      string
-	hereCode string
-	hereID   string
+	err   error
+	msg   string
+	infos *infobag.InfoBag
 }
 
 // newFailure creates an initialized failure.
-func newFailure(err error, msg string, args ...interface{}) *failure {
+func newFailure(err error, msg string, kvs ...interface{}) *failure {
+	infos := []interface{}{"location", location.At(2).ID}
+	if err != nil {
+		if af, ok := err.(*failure); ok {
+			// Nest failure.
+			infos = append(infos, "annotated", infobag.New(
+				"message", af.msg,
+				"infos", af.infos,
+			))
+		} else {
+			// Nest error.
+			infos = append(infos, "annotated", err.Error())
+		}
+	}
+	infos = append(infos, kvs...)
 	return &failure{
-		err:      err,
-		msg:      fmt.Sprintf(msg, args...),
-		hereCode: location.At(2).Code("E"),
-		hereID:   location.At(2).ID,
+		err:   err,
+		msg:   msg,
+		infos: infobag.New(infos...),
 	}
 }
 
@@ -47,10 +60,7 @@ func (f *failure) Unwrap() error {
 
 // Error implements the error interface.
 func (f *failure) Error() string {
-	if f.err != nil {
-		return fmt.Sprintf("[%s] %s: %v", f.hereCode, f.msg, f.err)
-	}
-	return fmt.Sprintf("[%s] %s", f.hereCode, f.msg)
+	return fmt.Sprintf("%s %v", f.msg, f.infos)
 }
 
 //--------------------
@@ -76,17 +86,17 @@ func (ec *errorCollection) Error() string {
 //--------------------
 
 // New creates an error with the given code.
-func New(msg string, args ...interface{}) error {
-	return newFailure(nil, msg, args...)
+func New(msg string, kvs ...interface{}) error {
+	return newFailure(nil, msg, kvs...)
 }
 
 // Annotate creates an error wrapping another one together with a
 // a code. If the passed one is nil, Annotate() also returns nil.
-func Annotate(err error, msg string, args ...interface{}) error {
+func Annotate(err error, msg string, kvs ...interface{}) error {
 	if err == nil {
 		return nil
 	}
-	return newFailure(err, msg, args...)
+	return newFailure(err, msg, kvs...)
 }
 
 // First checks the existing error for nil. If not it will be returned,
@@ -151,7 +161,10 @@ func Annotated(err error) error {
 // number of the error.
 func Location(err error) (string, error) {
 	if f, ok := err.(*failure); ok {
-		return f.hereID, nil
+		if location, ok := f.infos.Get("location"); ok {
+			return location, nil
+		}
+		return "", New("failure has no location")
 	}
 	return "", Annotate(err, "passed error has invalid type")
 }
@@ -179,18 +192,37 @@ func All(err error) []error {
 
 // DoAll iterates the passed function over all stacked
 // or collected errors or simply the one that's passed.
-func DoAll(err error, f func(error)) {
+func DoAll(err error, errF func(error)) {
 	switch terr := err.(type) {
 	case *failure:
 		for _, serr := range Stack(err) {
-			f(serr)
+			errF(serr)
 		}
 	case *errorCollection:
 		for _, aerr := range All(err) {
-			f(aerr)
+			errF(aerr)
 		}
 	default:
-		f(terr)
+		errF(terr)
+	}
+}
+
+// InfoBag returns the InfoBag an error created by this
+// package potentially contains.
+func InfoBag(err error) *infobag.InfoBag {
+	if IsValid(err) {
+		f := err.(*failure)
+		return f.infos
+	}
+	return nil
+}
+
+// DoInfoBag processes the InfoBag of the passed error if
+// it is valid.
+func DoInfoBag(err error, ibf func(key, value string)) {
+	if IsValid(err) {
+		f := err.(*failure)
+		f.infos.Do(ibf)
 	}
 }
 
