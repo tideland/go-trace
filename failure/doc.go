@@ -5,23 +5,15 @@
 // All rights reserved. Use of this source code is governed
 // by the new BSD license.
 
-// Package failure allows to create more detailed error values than
-// with errors.New() or fmt.Errorf().
-//
 // The errors package allows to easily created formatted errors
-// with New() like with the fmt.Errorf() function, but also containing
-// the location and a code. The creation of error nessages is like with
-// fmt.Errorf().
+// based on a message and if wanted a number of key/value pairs.
+// All data, also the location, will be collected in a nested
+// InfoBag. The output will be a JSON string of this data.
+// Additionally the InfoBag can be extracted for more detailed
+// analysis.
 //
-// If an error alreay exists use Annotate(). This way the original
-// error will be stored and can be retrieved with Annotated(). Also
-// its error message will be appended to the created error separated
-// by a colon.
-//
-// All errors additionally contain their package, filename and line
-// number. These information can be retrieved using Location(). In
-// case of a chain of annotated errors those can be retrieved as a
-// slice of errors with Stack().
+// Further options are annotations or in case of deep nested
+// annotations the retrievement of the error stack.
 package failure // import "tideland.dev/go/trace/failure"
 
 // EOF
